@@ -1,0 +1,41 @@
+{
+  "version": "4",
+  "specifiers": {
+    "jsr:@std/assert@1": "1.0.10",
+    "jsr:@std/internal@^1.0.5": "1.0.5",
+    "npm:@noble/curves@^1.7.0": "1.7.0",
+    "npm:@noble/hashes@^1.6.1": "1.6.1"
+  },
+  "jsr": {
+    "@std/assert@1.0.10": {
+      "integrity": "59b5cbac5bd55459a19045d95cc7c2ff787b4f8527c0dd195078ff6f9481fbb3",
+      "dependencies": [
+        "jsr:@std/internal"
+      ]
+    },
+    "@std/internal@1.0.5": {
+      "integrity": "54a546004f769c1ac9e025abd15a76b6671ddc9687e2313b67376125650dc7ba"
+    }
+  },
+  "npm": {
+    "@noble/curves@1.7.0": {
+      "integrity": "sha512-UTMhXK9SeDhFJVrHeUJ5uZlI6ajXg10O6Ddocf9S6GjbSBVZsJo88HzKwXznNfGpMTRDyJkqMjNDPYgf0qFWnw==",
+      "dependencies": [
+        "@noble/hashes@1.6.0"
+      ]
+    },
+    "@noble/hashes@1.6.0": {
+      "integrity": "sha512-YUULf0Uk4/mAA89w+k3+yUYh6NrEvxZa5T6SY3wlMvE2chHkxFUUIDI8/XW1QSC357iA5pSnqt7XEhvFOqmDyQ=="
+    },
+    "@noble/hashes@1.6.1": {
+      "integrity": "sha512-pq5D8h10hHBjyqX+cfBm0i8JUXJ0UhczFc4r74zbuT9XgewFo2E3J1cOaGtdZynILNmQ685YWGzGE1Zv6io50w=="
+    }
+  },
+  "workspace": {
+    "dependencies": [
+      "jsr:@std/assert@1",
+      "npm:@noble/curves@^1.7.0",
+      "npm:@noble/hashes@^1.6.1"
+    ]
+  }
+}
