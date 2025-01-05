@@ -3,6 +3,8 @@
     "ciphersuite",
     "Exponentiate",
     "keypair",
+    "octs",
+    "Shamir",
     "SSWU",
     "xffn"
   ]

@@ -1,18 +1,27 @@
-import { Cipher } from "../types/cipher.ts"
-import { G1Projective } from "../types/elements.ts"
+import { Cipher } from "../suite/cipher.ts"
+import { G1Projective } from "../suite/elements.ts"
 import { concatenate, i2osp } from "./format.ts"
 import { hashToScalar } from "./hash.ts"
 
 /**
- * Create a set of randomly sampled points from the G1 group, called the generators.
+ * Create a set of randomly sampled points from the G1 group, called the generators. 
+ * 
+ * This operation makes use of the `expand_message` and `hash_to_curve` primitives to hash a seed to a set of 
+ * generators. These primitives are implicitly defined by the cipher suite.
  *
  * @param {number} count Number of generators to create.
  * @param {Uint8Array} [apiId] The interface identifier. If not specified, it defaults to an empty array.
  * @param {Cipher} cipher The cipher suite.
- * 
+ *
  * @returns {Array<G1Projective>} An array of generators.
+ * 
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07#name-generators-calculation
  */
-export function createGenerators(count: number, apiId: Uint8Array = new Uint8Array(), cipher: Cipher): Array<G1Projective> {
+export function createGenerators(
+  count: number,
+  apiId: Uint8Array = new Uint8Array(),
+  cipher: Cipher,
+): Array<G1Projective> {
   /**
    * Definitions:
    *
@@ -27,11 +36,11 @@ export function createGenerators(count: number, apiId: Uint8Array = new Uint8Arr
   /**
    * Procedure:
    *
-   * 1. v = expand_message(generator_seed, seed_dst, expand_len)
-   * 2. for i in (1, 2, ..., count):
-   * 3.     v = expand_message(v || i2osp(i, 8), seed_dst, expand_len)
-   * 4.     generators_i = hash_to_curve_g1(v, generator_dst)
-   * 5. return (generators_1, generators_2, ..., generators_count)
+   * 1. v := expand_message(generator_seed, seed_dst, expand_len).
+   * 2. For i in (1, 2, ..., count):
+   * 3.     v := expand_message(v || i2osp(i, 8), seed_dst, expand_len).
+   * 4.     generators_i := hash_to_curve_g1(v, generator_dst).
+   * 5. Return (generators_1, generators_2, ..., generators_count).
    */
   const generators = new Array<G1Projective>(count)
   let v = cipher.expandMessage(generatorSeed, seedDst)
@@ -50,6 +59,8 @@ export function createGenerators(count: number, apiId: Uint8Array = new Uint8Arr
  * @param {Cipher} cipher The cipher suite.
  *
  * @returns {Array<bigint>} The scalar values.
+ * 
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07#name-messages-to-scalars
  */
 export function messagesToScalars(
   messages: Array<Uint8Array>,
@@ -75,10 +86,10 @@ export function messagesToScalars(
   /**
    * Procedure:
    *
-   * 1. L := len(messages)
-   * 2. for i in (1, 2, ..., L):
-   * 3.     msg_scalar_i = hash_to_scalar(messages[i], map_dst)
-   * 4. return (msg_scalar_1, msg_scalar_2, ..., msg_scalar_L)
+   * 1. L := len(messages).
+   * 2. For i in (1, 2, ..., L):
+   * 3.     msg_scalar_i := hash_to_scalar(messages[i], map_dst).
+   * 4. Return (msg_scalar_1, msg_scalar_2, ..., msg_scalar_L).
    */
-  return messages.map((messageOctets) => hashToScalar(messageOctets, mapDst, cipher))
+  return messages.map((message) => hashToScalar(message, mapDst, cipher))
 }

@@ -3,8 +3,8 @@ import { bls12_381 } from "@noble/curves/bls12-381"
 import { sha256 } from "@noble/hashes/sha2"
 import { shake256 } from "@noble/hashes/sha3"
 
-import { Cipher } from "../types/cipher.ts"
-import { G1Projective, G2Projective, Gt } from "../types/elements.ts"
+import { Cipher } from "./cipher.ts"
+import { G1Projective, G2Projective, Gt } from "./elements.ts"
 
 export const BLS12_381_SHAKE_256: Cipher = {
   id: new TextEncoder().encode("BBS_BLS12381G1_XOF:SHAKE-256_SSWU_RO_"),

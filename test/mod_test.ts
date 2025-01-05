@@ -1,10 +1,11 @@
 import { assert, assertEquals, assertFalse } from "@std/assert"
 import { bytesToNumberBE } from "@noble/curves/abstract/utils"
+import { bls12_381 } from "@noble/curves/bls12-381"
 import { randomBytes } from "@noble/hashes/utils"
 
-import { isE1Point, isE2Point } from "../src/types/elements.ts"
+import { isE1Point, isE2Point } from "../src/suite/elements.ts"
 import { concatenate, os2ip } from "../src/utils/format.ts"
-import { bls12_381 } from "@noble/curves/bls12-381"
+
 
 Deno.test("os2ip", () => {
   const random = randomBytes(32)

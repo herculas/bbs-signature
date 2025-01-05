@@ -1,4 +1,4 @@
-import { Cipher } from "../types/cipher.ts"
+import { Cipher } from "../suite/cipher.ts"
 import { concatenate, i2osp } from "../utils/format.ts"
 import { hashToScalar } from "../utils/hash.ts"
 
@@ -14,7 +14,7 @@ import { hashToScalar } from "../utils/hash.ts"
  *
  * @returns {bigint} A uniformly random integer in the range [1, r - 1].
  *
- * @see https://identity.foundation/bbs-signature/draft-irtf-cfrg-bbs-signatures.html#name-secret-key
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07#name-secret-key
  */
 export function generateSecretKey(
   material: Uint8Array,
@@ -22,6 +22,16 @@ export function generateSecretKey(
   dst: Uint8Array,
   cipher: Cipher,
 ): bigint {
+  /**
+   * Procedure:
+   * 
+   * 1. If len(key_material) < 32, return INVALID.
+   * 2. If len(key_info) > 65535, return INVALID.
+   * 3. derive_input := key_material || I2OSP(len(key_info), 2) || key_info.
+   * 4. SK := hash_to_scalar(derive_input, key_dst).
+   * 5. If SK is INVALID, return INVALID.
+   * 6. Return SK.
+   */
   if (material.length < 32) {
     throw new Error("material must be at least 32 bytes")
   }
@@ -41,9 +51,15 @@ export function generateSecretKey(
  *
  * @returns {Uint8Array} The public key in octet format.
  *
- * @see https://identity.foundation/bbs-signature/draft-irtf-cfrg-bbs-signatures.html#name-public-key
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07#name-public-key
  */
 export function generatePublicKey(secretKey: bigint, cipher: Cipher): Uint8Array {
+  /**
+   * Procedure:
+   * 
+   * 1. W := SK * BP2.
+   * 2. Return point_to_octets_E2(W).
+   */
   const w = cipher.types.G2.BASE.multiply(secretKey)
   return w.toRawBytes()
 }

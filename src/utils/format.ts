@@ -1,10 +1,12 @@
 /**
- * Integer to octet string.
+ * Convert a non-negative integer into an octet string of specified length.
  *
- * @param {bigint} value The integer to convert.
- * @param {number} length The length of the resulting octet string.
+ * @param {bigint} value The integer to be converted.
+ * @param {number} length The intended length of the resulting octet string.
  *
- * @returns {Uint8Array} The octet string.
+ * @returns {Uint8Array} The octet string in big-endian order.
+ *
+ * @see https://datatracker.ietf.org/doc/html/rfc8017#section-4.1
  */
 export function i2osp(value: bigint, length: number): Uint8Array {
   if (length <= 0 || !Number.isSafeInteger(length)) {
@@ -23,11 +25,13 @@ export function i2osp(value: bigint, length: number): Uint8Array {
 }
 
 /**
- * Octet string to integer.
+ * Convert an octet string into a non-negative integer.
  *
- * @param {Uint8Array} octets The octet string to convert.
+ * @param {Uint8Array} octets The octet string to be converted in big-endian order.
  *
  * @returns {bigint} The integer.
+ *
+ * @see https://datatracker.ietf.org/doc/html/rfc8017#section-4.2
  */
 export function os2ip(octets: Uint8Array): bigint {
   const hex = bytesToHex(octets)
@@ -59,7 +63,9 @@ export function concatenate(...arrays: Uint8Array[]): Uint8Array {
  * @returns {string} The hex string.
  */
 export function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes).map((byte) => byte.toString(16).padStart(2, "0")).join("")
+  return Array.from(bytes)
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("")
 }
 
 /**
@@ -76,5 +82,9 @@ export function hexToBytes(hex: string): Uint8Array {
   if (hex.length === 0) {
     return new Uint8Array()
   }
-  return new Uint8Array(hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)))
+  return new Uint8Array(
+    hex
+      .match(/.{1,2}/g)!
+      .map((byte) => parseInt(byte, 16)),
+  )
 }

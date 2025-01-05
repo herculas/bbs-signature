@@ -1,5 +1,5 @@
-import { Cipher } from "../types/cipher.ts"
-import { G1Projective } from "../types/elements.ts"
+import { Cipher } from "../suite/cipher.ts"
+import { G1Projective } from "../suite/elements.ts"
 import { concatenate, i2osp } from "./format.ts"
 import { hashToScalar } from "./hash.ts"
 import { serialize } from "./serialize.ts"
@@ -25,7 +25,7 @@ import { serialize } from "./serialize.ts"
  *
  * @returns {bigint} The domain value.
  *
- * @see https://identity.foundation/bbs-signature/draft-irtf-cfrg-bbs-signatures.html#name-domain-calculation
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07#name-domain-calculation
  */
 export function calculateDomain(
   publicKey: Uint8Array,
@@ -38,15 +38,15 @@ export function calculateDomain(
   /**
    * Definitions:
    *
-   * 1. hash_to_scalar_dst: an octet string representing the domain separation tag: api_id || "H2S_".
+   * 1. hash_to_scalar_dst: an octet string representing the domain separation tag: <api_id> || "H2S_".
    */
   const hashToScalarDst = concatenate(apiId, new TextEncoder().encode("H2S_"))
 
   /**
    * Deserialization:
    *
-   * 1. L := len(h_points)
-   * 2. (H_1, H_2, ..., H_L) := h_points
+   * 1. L := len(h_points).
+   * 2. (H_1, H_2, ..., H_L) := h_points.
    */
   const len = hPoints.length
 
@@ -62,10 +62,10 @@ export function calculateDomain(
   /**
    * Procedure:
    *
-   * 1. dom_array = (L, Q_1, H_1, H_2, ..., H_L)
-   * 2. dom_octets = serialize(dom_array) || api_id
-   * 3. dom_input = PK || dom_octets || i2osp(len(header), 8) || header
-   * 4. return hash_to_scalar(dom_input, hash_to_scalar_dst)
+   * 1. dom_array := (L, Q_1, H_1, H_2, ..., H_L).
+   * 2. dom_octets := serialize(dom_array) || api_id.
+   * 3. dom_input := PK || dom_octets || i2osp(len(header), 8) || header.
+   * 4. Return hash_to_scalar(dom_input, hash_to_scalar_dst).
    */
   const domArray = [len, q1, ...hPoints]
   const domOctets = concatenate(serialize(domArray, cipher), apiId)
