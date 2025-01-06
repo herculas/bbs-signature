@@ -3,7 +3,7 @@ import { G1Projective, Scalar } from "../suite/elements.ts"
 import { calculateDomain } from "../utils/domain.ts"
 import { concatenate, i2osp } from "../utils/format.ts"
 import { hashToScalar } from "../utils/hash.ts"
-import { octetsToSignature, proofToOctets, serialize } from "../utils/serialize.ts"
+import { proofToOctets, serialize } from "../utils/serialize.ts"
 
 /**
  * Initialize the proof and returns one of the inputs passed to the challenge calculation operation. The input
@@ -17,7 +17,7 @@ import { octetsToSignature, proofToOctets, serialize } from "../utils/serialize.
  * sampled random scalars. This set must have exactly 5 more items than the list of undisclosed indexes.
  *
  * @param {Uint8Array} publicKey An octet string representing the public key.
- * @param {Uint8Array} signature An octet string representing the signature.
+ * @param {[G1Projective, Scalar]} signature A vector containing a G1 point and a scalar representing the signature.
  * @param {Array<G1Projective>} generators A vector of pseudo-random points in G1.
  * @param {Array<Scalar>} randomScalars A vector of uniformly sampled random scalars.
  * @param {Uint8Array} [header] An octet string containing context and application specific information.
@@ -33,7 +33,7 @@ import { octetsToSignature, proofToOctets, serialize } from "../utils/serialize.
  */
 export function init(
   publicKey: Uint8Array,
-  signature: Uint8Array,
+  signature: [G1Projective, Scalar],
   generators: Array<G1Projective>,
   randomScalars: Array<Scalar>,
   header: Uint8Array = new Uint8Array(),
@@ -58,7 +58,7 @@ export function init(
    * 10. (H_1, H_2, ..., H_L) := MsgGenerators.
    * 11. (H_{j_1}, H_{j_2}, ..., H_{j_U}) := (MsgGenerators[j_1], MsgGenerators[j_2], ..., MsgGenerators[j_U]).
    */
-  const [A, e] = octetsToSignature(signature, cipher)
+  const [A, e] = signature
   const l = messages.length
   const u = undisclosedIndexes.length
 
