@@ -70,7 +70,7 @@ export function seededRandomScalars(seed: Uint8Array, dst: Uint8Array, count: nu
 
   return Array.from({ length: count }, (_, i) => {
     const startIdx = i * cipher.expandLength
-    const endIdx = (i + 1) * cipher.expandLength - 1
+    const endIdx = (i + 1) * cipher.expandLength
     return mod(
       os2ip(v.subarray(startIdx, endIdx)),
       cipher.types.Fr.ORDER,
