@@ -1,42 +1,12 @@
-import { assertEquals } from "@std/assert"
+import { assert, assertEquals } from "@std/assert"
 
 import { BLS12_381_SHA_256, BLS12_381_SHAKE_256 } from "../src/suite/ciphers.ts"
-import { bytesToHex, concatenate, hexToBytes, i2osp, os2ip } from "../src/utils/format.ts"
-import { seededRandomScalars } from "../src/utils/random.ts"
+import { bytesToHex, concatenate, hexToBytes, os2ip } from "../src/utils/format.ts"
 import { challenge, finalize, init } from "../src/proof/subroutines.ts"
 import { octetsToSignature } from "../src/utils/serialize.ts"
 import { createGenerators, messagesToScalars } from "../src/utils/interface.ts"
 import { serialize } from "../src/utils/serialize.ts"
-
-/**
- * Generate test vectors for random scalar generation.
- *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07#name-proof-fixtures
- */
-Deno.test("shake-256 random scalar generation", () => {
-  const cipher = BLS12_381_SHAKE_256
-  const seed = hexToBytes("332e313431353932363533353839373933323338343632363433333833323739")
-  const apiId = concatenate(cipher.id, new TextEncoder().encode("H2G_HM2S_"))
-  const dst = concatenate(apiId, new TextEncoder().encode("MOCK_RANDOM_SCALARS_DST_"))
-  const count = 10
-
-  const scalars = seededRandomScalars(seed, dst, count, cipher)
-  const scalarHex = scalars.map((scalar) => {
-    const bytes = i2osp(scalar, cipher.octetScalarLength)
-    return bytesToHex(bytes)
-  })
-
-  assertEquals(scalarHex[0], "1004262112c3eaa95941b2b0d1311c09c845db0099a50e67eda628ad26b43083")
-  assertEquals(scalarHex[1], "6da7f145a94c1fa7f116b2482d59e4d466fe49c955ae8726e79453065156a9a4")
-  assertEquals(scalarHex[2], "05017919b3607e78c51e8ec34329955d49c8c90e4488079c43e74824e98f1306")
-  assertEquals(scalarHex[3], "4d451dad519b6a226bba79e11b44c441f1a74800eecfec6a2e2d79ea65b9d32d")
-  assertEquals(scalarHex[4], "5e7e4894e6dbe68023bc92ef15c410b01f3828109fc72b3b5ab159fc427b3f51")
-  assertEquals(scalarHex[5], "646e3014f49accb375253d268eb6c7f3289a1510f1e9452b612dd73a06ec5dd4")
-  assertEquals(scalarHex[6], "363ecc4c1f9d6d9144374de8f1f7991405e3345a3ec49dd485a39982753c11a4")
-  assertEquals(scalarHex[7], "12e592fe28d91d7b92a198c29afaa9d5329a4dcfdaf8b08557807412faeb4ac6")
-  assertEquals(scalarHex[8], "513325acdcdec7ea572360587b350a8b095ca19bdd8258c5c69d375e8706141a")
-  assertEquals(scalarHex[9], "6474fceba35e7e17365dde1a0284170180e446ae96c82943290d7baa3a6ed429")
-})
+import { verify } from "../src/proof/core.ts"
 
 /**
  * Valid single message proof generation.
@@ -67,12 +37,17 @@ Deno.test("shake-256 proof for single message", () => {
   const [a, e] = octetsToSignature(signatureBytes, cipher)
   const apiId = concatenate(cipher.id, new TextEncoder().encode("H2G_HM2S_"))
   const generators = createGenerators(2, apiId, cipher)
-  const msgs = messagesToScalars([msgBytes], apiId, cipher)
   const randoms = [r1, r2, eTilde, r1Tilde, r3Tilde]
+  const msgs = messagesToScalars([msgBytes], apiId, cipher)
 
-  const initRes = init(pkBytes, [a, e], generators, randoms, headerBytes, msgs, [], apiId, cipher)
-  const c = challenge(initRes, msgs, [0], presentationHeaderBytes, apiId, cipher)
-  const proof = finalize(initRes, c, e, randoms, [], cipher)
+  const disclosedIndexes: Array<number> = [0]
+  const undisclosedIndexes: Array<number> = []
+  const disclosedMessages = msgs.filter((_, i) => disclosedIndexes.includes(i))
+  const undisclosedMessages = msgs.filter((_, i) => undisclosedIndexes.includes(i))
+
+  const initRes = init(pkBytes, [a, e], generators, randoms, headerBytes, msgs, undisclosedIndexes, apiId, cipher)
+  const c = challenge(initRes, disclosedMessages, disclosedIndexes, presentationHeaderBytes, apiId, cipher)
+  const proof = finalize(initRes, c, e, randoms, undisclosedMessages, cipher)
 
   assertEquals(
     bytesToHex(serialize([initRes[3]], cipher)),
@@ -98,6 +73,19 @@ Deno.test("shake-256 proof for single message", () => {
       "b32f539bdf9f9b582b250b05882996832652f7f5d3b6e04744c73ada1702d679" +
       "1940ccbd75e719537f7ace6ee817298d",
   )
+
+  const verification = verify(
+    pkBytes,
+    proof,
+    generators,
+    headerBytes,
+    presentationHeaderBytes,
+    disclosedMessages,
+    disclosedIndexes,
+    apiId,
+    cipher,
+  )
+  assert(verification)
 })
 
 /**
@@ -130,7 +118,6 @@ Deno.test("shake-256 proof for multiple message, all disclosed", () => {
       "faabb913ac94d18e1e92832e924cb6e202912b624261fc6c59b0fea801547f67" +
       "fb7d3253e1e2acbcf90ef59a6911931e",
   )
-  const disclosedIndexes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
   const r1 = os2ip(hexToBytes("1308e6f945f663b96de1c76461cf7d7f88b92eb99a9034685150db443d733881"))
   const r2 = os2ip(hexToBytes("25f81cb69a8fac6fb55d44a084557258575d1003be2bd94f1922dad2c3e447fd"))
@@ -145,9 +132,14 @@ Deno.test("shake-256 proof for multiple message, all disclosed", () => {
   const [a, e] = octetsToSignature(signatureBytes, cipher)
   const msgs = messagesToScalars([msg_1, msg_2, msg_3, msg_4, msg_5, msg_6, msg_7, msg_8, msg_9, msg_10], apiId, cipher)
 
-  const initRes = init(pkBytes, [a, e], generators, randoms, headerBytes, msgs, [], apiId, cipher)
-  const c = challenge(initRes, msgs, disclosedIndexes, presentationHeaderBytes, apiId, cipher)
-  const proof = finalize(initRes, c, e, randoms, [], cipher)
+  const disclosedIndexes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  const undisclosedIndexes: Array<number> = []
+  const disclosedMessages = msgs.filter((_, i) => disclosedIndexes.includes(i))
+  const undisclosedMessages = msgs.filter((_, i) => undisclosedIndexes.includes(i))
+
+  const initRes = init(pkBytes, [a, e], generators, randoms, headerBytes, msgs, undisclosedIndexes, apiId, cipher)
+  const c = challenge(initRes, disclosedMessages, disclosedIndexes, presentationHeaderBytes, apiId, cipher)
+  const proof = finalize(initRes, c, e, randoms, undisclosedMessages, cipher)
 
   assertEquals(
     bytesToHex(serialize([initRes[3]], cipher)),
@@ -173,6 +165,19 @@ Deno.test("shake-256 proof for multiple message, all disclosed", () => {
       "9d5e215992fb637984802066dee6919146ae50b70ea52332dfe57f6e05c66e99" +
       "f1764d8b890d121d65bfcc2984886ee0",
   )
+
+  const verification = verify(
+    pkBytes,
+    proof,
+    generators,
+    headerBytes,
+    presentationHeaderBytes,
+    disclosedMessages,
+    disclosedIndexes,
+    apiId,
+    cipher,
+  )
+  assert(verification)
 })
 
 /**
@@ -266,36 +271,231 @@ Deno.test("shake-256 proof for multiple message, partial disclosed", () => {
       "ece2d61d89a064ab4804c3c892d651d11bc325464a71cd7aacc2d956a811aaff" +
       "13ea4c35cef7842b656e8ba4758e7558",
   )
+
+  const verification = verify(
+    pkBytes,
+    proof,
+    generators,
+    headerBytes,
+    presentationHeaderBytes,
+    disclosedMessages,
+    disclosedIndexes,
+    apiId,
+    cipher,
+  )
+  assert(verification)
 })
 
 /**
- * Generate test vectors for random scalar generation.
+ * Valid proof for multiple messages, partial disclosed, no header.
  *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07#name-proof-fixtures-2
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07#name-no-header-valid-proof
  */
-Deno.test("sha-256 random scalar generation", () => {
-  const cipher = BLS12_381_SHA_256
-  const seed = hexToBytes("332e313431353932363533353839373933323338343632363433333833323739")
+Deno.test("shake-256 proof for multiple message, partial disclosed, no header", () => {
+  const msg_1 = hexToBytes("9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02")
+  const msg_2 = hexToBytes("c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80")
+  const msg_3 = hexToBytes("7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73")
+  const msg_4 = hexToBytes("77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c")
+  const msg_5 = hexToBytes("496694774c5604ab1b2544eababcf0f53278ff50")
+  const msg_6 = hexToBytes("515ae153e22aae04ad16f759e07237b4")
+  const msg_7 = hexToBytes("d183ddc6e2665aa4e2f088af")
+  const msg_8 = hexToBytes("ac55fb33a75909ed")
+  const msg_9 = hexToBytes("96012096")
+  const msg_10 = hexToBytes("")
+
+  const headerBytes = undefined
+  const presentationHeaderBytes = hexToBytes("bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501")
+
+  const pkBytes = hexToBytes(
+    "92d37d1d6cd38fea3a873953333eab23a4c0377e3e049974eb62bd45949cdeb1" +
+      "8fb0490edcd4429adff56e65cbce42cf188b31bddbd619e419b99c2c41b38179" +
+      "eb001963bc3decaae0d9f702c7a8c004f207f46c734a5eae2e8e82833f3e7ea5",
+  )
+  const signatureBytes = hexToBytes(
+    "88beeb970f803160d3058eacde505207c576a8c9e4e5dc7c5249cbcf2a046c15" +
+      "f8df047031eef3436e04b779d92a9cdb1fe4c6cc035ba1634f1740f9dd49816d" +
+      "3ca745ecbe39f655ea61fb700137fded",
+  )
+
+  const r1 = os2ip(hexToBytes("5ee9426ae206e3a127eb53c79044bc9ed1b71354f8354b01bf410a02220be7d0"))
+  const r2 = os2ip(hexToBytes("280d4fcc38376193ffc777b68459ed7ba897e2857f938581acf95ae5a68988f3"))
+  const eTilde = os2ip(hexToBytes("39966b00042fc43906297d692ebb41de08e36aada8d9504d4e0ae02ad59e9230"))
+  const r1Tilde = os2ip(hexToBytes("61f5c273999b0b50be8f84d2380eb9220fc5a88afe144efc4007545f0ab9c089"))
+  const r3Tilde = os2ip(hexToBytes("63af117e0c8b7d2f1f3e375fcf5d9430e136ff0f7e879423e49dadc401a50089"))
+  const mTildes = [
+    os2ip(hexToBytes("020b83ca2ab319cba0744d6d58da75ac3dfb6ba682bfce2587c5a6d86a4e4e7b")),
+    os2ip(hexToBytes("5bf565343611c08f83e4420e8b1577ace8cc4df5d5303aeb3c4e425f1080f836")),
+    os2ip(hexToBytes("049d77949af1192534da28975f76d4f211315dce1e36f93ffcf2a555de516b28")),
+    os2ip(hexToBytes("407e5a952f145de7da53533de8366bbd2e0c854721a204f03906dc82fde10f48")),
+    os2ip(hexToBytes("1c925d9052849edddcf04d5f1f0d4ff183a66b66eb820f59b675aee121cfc63c")),
+    os2ip(hexToBytes("07d7c41b02158a9c5eac212ed6d7c2cddeb8e38baea6e93e1a00b2e83e2a0995")),
+  ]
+
+  const cipher = BLS12_381_SHAKE_256
+  const randoms = [r1, r2, eTilde, r1Tilde, r3Tilde, ...mTildes]
   const apiId = concatenate(cipher.id, new TextEncoder().encode("H2G_HM2S_"))
-  const dst = concatenate(apiId, new TextEncoder().encode("MOCK_RANDOM_SCALARS_DST_"))
-  const count = 10
+  const generators = createGenerators(11, apiId, cipher)
+  const [a, e] = octetsToSignature(signatureBytes, cipher)
+  const msgs = messagesToScalars([msg_1, msg_2, msg_3, msg_4, msg_5, msg_6, msg_7, msg_8, msg_9, msg_10], apiId, cipher)
 
-  const scalars = seededRandomScalars(seed, dst, count, cipher)
-  const scalarHex = scalars.map((scalar) => {
-    const bytes = i2osp(scalar, cipher.octetScalarLength)
-    return bytesToHex(bytes)
-  })
+  const disclosedIndexes = [0, 2, 4, 6]
+  const undisclosedIndexes = [1, 3, 5, 7, 8, 9]
+  const disclosedMessages = msgs.filter((_, i) => disclosedIndexes.includes(i))
+  const undisclosedMessages = msgs.filter((_, i) => undisclosedIndexes.includes(i))
 
-  assertEquals(scalarHex[0], "04f8e2518993c4383957ad14eb13a023c4ad0c67d01ec86eeb902e732ed6df3f")
-  assertEquals(scalarHex[1], "5d87c1ba64c320ad601d227a1b74188a41a100325cecf00223729863966392b1")
-  assertEquals(scalarHex[2], "0444607600ac70482e9c983b4b063214080b9e808300aa4cc02a91b3a92858fe")
-  assertEquals(scalarHex[3], "548cd11eae4318e88cda10b4cd31ae29d41c3a0b057196ee9cf3a69d471e4e94")
-  assertEquals(scalarHex[4], "2264b06a08638b69b4627756a62f08e0dc4d8240c1b974c9c7db779a769892f4")
-  assertEquals(scalarHex[5], "4d99352986a9f8978b93485d21525244b21b396cf61f1d71f7c48e3fbc970a42")
-  assertEquals(scalarHex[6], "5ed8be91662386243a6771fbdd2c627de31a44220e8d6f745bad5d99821a4880")
-  assertEquals(scalarHex[7], "62ff1734b939ddd87beeb37a7bbcafa0a274cbc1b07384198f0e88398272208d")
-  assertEquals(scalarHex[8], "05c2a0af016df58e844db8944082dcaf434de1b1e2e7136ec8a99b939b716223")
-  assertEquals(scalarHex[9], "485e2adab17b76f5334c95bf36c03ccf91cef77dcfcdc6b8a69e2090b3156663")
+  const initRes = init(pkBytes, [a, e], generators, randoms, headerBytes, msgs, undisclosedIndexes, apiId, cipher)
+  const c = challenge(initRes, disclosedMessages, disclosedIndexes, presentationHeaderBytes, apiId, cipher)
+  const proof = finalize(initRes, c, e, randoms, undisclosedMessages, cipher)
+
+  assertEquals(
+    bytesToHex(serialize([initRes[3]], cipher)),
+    "a5405cc2c5965dda18714ab35f4d4a7ae4024f388fa7a5ba71202d4455b50b316ec37b360659e3012234562fa8989980",
+  )
+  assertEquals(
+    bytesToHex(serialize([initRes[4]], cipher)),
+    "9827a40454cdc90a70e9c927f097019dbdd84768babb10ebcb460c2d918e1ce1c0512bf2cc49ed7ec476dfcde7a6a10c",
+  )
+  assertEquals(
+    bytesToHex(serialize([initRes[5]], cipher)),
+    "333d8686761cff65a3a2ef20bfa217d37bdf19105e87c210e9ce64ea1210a157",
+  )
+  assertEquals(
+    bytesToHex(proof),
+    "8ac336eea1d278656372d9914483c3d3b3069dfa4a7862293ac021dfeeebca93" +
+      "cadd7eb2b818f7b89719cdeffa5aa85989a7d691be11b1929a2bf089bfe9f2ad" +
+      "c2c06788edc30585546efb74877f34ad91f0d6923b4ed7a53c49051dda8d056a" +
+      "95644ee738810772d90c1033f1dfe45c0b1b453d131170aafa8a99f812f3b90a" +
+      "5d1d9e6bd05a4dee6a50dd277ffc646f2429372f3ad9d5946ffeb53f24d41ffc" +
+      "c83c32cbb68afc9b6e0b64eebd24c69c6a7bd3bca8a6394ed8ae315abd555a69" +
+      "96f34d9da7680447947b3f35f54c38b562e990ee4d17a21569af4fc02f2991e6" +
+      "db78cc32d3ef9f6069fc5c2d47c8d8ff116dfb8a59641641961b854427f67649" +
+      "df14ab6e63f2d0d2a0cba2b2e1e835d20cd45e41f274532e9d50f31a690e5fef" +
+      "1c1456b65c668b80d8ec17b09bd5fb3b2c4edd6d6f5f790a5d6da22eb9a1aa21" +
+      "96d1a607f3c753813ba2bc6ece15d35263218fc7667c5f0fabfffe74745a8000" +
+      "e0415c8dafd5654ce6850ac2c6485d02433fdaebd9993f8b86a2eebb3beb10b4" +
+      "cc7735330384a3f4dfd4d5b21998ad0227b37e736cf9c144a0386f28cccf27a0" +
+      "1e50aab45dda8275eb877728e77d2055309dba8c6604e7cff0d2c46ce6026b8e" +
+      "232c192955f909da6e47c2130c7e3f4f",
+  )
+
+  const verification = verify(
+    pkBytes,
+    proof,
+    generators,
+    headerBytes,
+    presentationHeaderBytes,
+    disclosedMessages,
+    disclosedIndexes,
+    apiId,
+    cipher,
+  )
+  assert(verification)
+})
+
+/**
+ * Valid proof for multiple messages, partial disclosed, no presentation header.
+ *
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07#name-no-presentation-header-vali
+ */
+Deno.test("shake-256 proof for multiple message, partial disclosed, no presentation header", () => {
+  const msg_1 = hexToBytes("9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02")
+  const msg_2 = hexToBytes("c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80")
+  const msg_3 = hexToBytes("7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73")
+  const msg_4 = hexToBytes("77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c")
+  const msg_5 = hexToBytes("496694774c5604ab1b2544eababcf0f53278ff50")
+  const msg_6 = hexToBytes("515ae153e22aae04ad16f759e07237b4")
+  const msg_7 = hexToBytes("d183ddc6e2665aa4e2f088af")
+  const msg_8 = hexToBytes("ac55fb33a75909ed")
+  const msg_9 = hexToBytes("96012096")
+  const msg_10 = hexToBytes("")
+
+  const headerBytes = hexToBytes("11223344556677889900aabbccddeeff")
+  const presentationHeaderBytes = undefined
+
+  const pkBytes = hexToBytes(
+    "92d37d1d6cd38fea3a873953333eab23a4c0377e3e049974eb62bd45949cdeb1" +
+      "8fb0490edcd4429adff56e65cbce42cf188b31bddbd619e419b99c2c41b38179" +
+      "eb001963bc3decaae0d9f702c7a8c004f207f46c734a5eae2e8e82833f3e7ea5",
+  )
+  const signatureBytes = hexToBytes(
+    "956a3427b1b8e3642e60e6a7990b67626811adeec7a0a6cb4f770cdd7c20cf08" +
+      "faabb913ac94d18e1e92832e924cb6e202912b624261fc6c59b0fea801547f67" +
+      "fb7d3253e1e2acbcf90ef59a6911931e",
+  )
+
+  const r1 = os2ip(hexToBytes("5ee9426ae206e3a127eb53c79044bc9ed1b71354f8354b01bf410a02220be7d0"))
+  const r2 = os2ip(hexToBytes("280d4fcc38376193ffc777b68459ed7ba897e2857f938581acf95ae5a68988f3"))
+  const eTilde = os2ip(hexToBytes("39966b00042fc43906297d692ebb41de08e36aada8d9504d4e0ae02ad59e9230"))
+  const r1Tilde = os2ip(hexToBytes("61f5c273999b0b50be8f84d2380eb9220fc5a88afe144efc4007545f0ab9c089"))
+  const r3Tilde = os2ip(hexToBytes("63af117e0c8b7d2f1f3e375fcf5d9430e136ff0f7e879423e49dadc401a50089"))
+  const mTildes = [
+    os2ip(hexToBytes("020b83ca2ab319cba0744d6d58da75ac3dfb6ba682bfce2587c5a6d86a4e4e7b")),
+    os2ip(hexToBytes("5bf565343611c08f83e4420e8b1577ace8cc4df5d5303aeb3c4e425f1080f836")),
+    os2ip(hexToBytes("049d77949af1192534da28975f76d4f211315dce1e36f93ffcf2a555de516b28")),
+    os2ip(hexToBytes("407e5a952f145de7da53533de8366bbd2e0c854721a204f03906dc82fde10f48")),
+    os2ip(hexToBytes("1c925d9052849edddcf04d5f1f0d4ff183a66b66eb820f59b675aee121cfc63c")),
+    os2ip(hexToBytes("07d7c41b02158a9c5eac212ed6d7c2cddeb8e38baea6e93e1a00b2e83e2a0995")),
+  ]
+
+  const cipher = BLS12_381_SHAKE_256
+  const randoms = [r1, r2, eTilde, r1Tilde, r3Tilde, ...mTildes]
+  const apiId = concatenate(cipher.id, new TextEncoder().encode("H2G_HM2S_"))
+  const generators = createGenerators(11, apiId, cipher)
+  const [a, e] = octetsToSignature(signatureBytes, cipher)
+  const msgs = messagesToScalars([msg_1, msg_2, msg_3, msg_4, msg_5, msg_6, msg_7, msg_8, msg_9, msg_10], apiId, cipher)
+
+  const disclosedIndexes = [0, 2, 4, 6]
+  const undisclosedIndexes = [1, 3, 5, 7, 8, 9]
+  const disclosedMessages = msgs.filter((_, i) => disclosedIndexes.includes(i))
+  const undisclosedMessages = msgs.filter((_, i) => undisclosedIndexes.includes(i))
+
+  const initRes = init(pkBytes, [a, e], generators, randoms, headerBytes, msgs, undisclosedIndexes, apiId, cipher)
+  const c = challenge(initRes, disclosedMessages, disclosedIndexes, presentationHeaderBytes, apiId, cipher)
+  const proof = finalize(initRes, c, e, randoms, undisclosedMessages, cipher)
+
+  assertEquals(
+    bytesToHex(serialize([initRes[3]], cipher)),
+    "8b497dd4dcdcf7eb58c9b43e57e06bcea3468a223ae2fc015d7a86506a952d68055e73f5a5847e58f133ea154256d0da",
+  )
+  assertEquals(
+    bytesToHex(serialize([initRes[4]], cipher)),
+    "8655584d3da1313f881f48c239384a5623d2d292f08dae7ac1d8129c19a02a89b82fa45de3f6c2c439510fce5919656f",
+  )
+  assertEquals(
+    bytesToHex(serialize([initRes[5]], cipher)),
+    "6f7ee8de30835599bb540d2cb4dd02fd0c6cf8246f14c9ee9a8463f7fd400f7b",
+  )
+  assertEquals(
+    bytesToHex(proof),
+    "b1f8bf99a11c39f04e2a032183c1ead12956ad322dd06799c50f20fb8cf6b0ac" +
+      "279210ef5a2920a7be3ec2aa0911ace7b96811a98f3c1cceba4a2147ae763b3b" +
+      "a036f47bc21c39179f2b395e0ab1ac49017ea5b27848547bedd27be481c1dfc0" +
+      "b73372346feb94ab16189d4c525652b8d3361bab43463700720ecfb0ee75e595" +
+      "ea1b13330615011050a0dfcffdb21af33fda9e14ba4cc0fcad8015bce3fecc47" +
+      "04799bef9924ab19688fc04f760c4da35017072a3e295788eff1b0dc2311bb19" +
+      "9c186f86ea0540379d5a2ac8b7bd02d22487f2acc0e299115e16097b970badea" +
+      "802752a6fcb56cfbbcc2569916a8d3fe6d2d0fb1ae801cfc5ce056699adf23e3" +
+      "cd16b1fdf197deac099ab093da049a5b4451d038c71b7cc69e8390967594f677" +
+      "7a855c7f5d301f0f0573211ac85e2e165ea196f78c33f54092645a51341b777f" +
+      "0f5342301991f3da276c04b0224f7308090ae0b290d428a0570a71605a27977e" +
+      "7daf01d42dfbdcec252686c3060a73d81f6e151e23e3df2473b322da389f15a5" +
+      "5cb2cd8a2bf29ef0d83d4876117735465fae956d8df56ec9eb0e4748ad3ef558" +
+      "7797368c51a0ccd67eb6da38602a1c2d4fd411214efc6932334ba0bcbf562626" +
+      "e7c0e1ae0db912c28d99f194fa3cd3a2",
+  )
+
+  const verification = verify(
+    pkBytes,
+    proof,
+    generators,
+    headerBytes,
+    presentationHeaderBytes,
+    disclosedMessages,
+    disclosedIndexes,
+    apiId,
+    cipher,
+  )
+  assert(verification)
 })
 
 /**
@@ -327,12 +527,17 @@ Deno.test("sha-256 proof for single message", () => {
   const [a, e] = octetsToSignature(signatureBytes, cipher)
   const apiId = concatenate(cipher.id, new TextEncoder().encode("H2G_HM2S_"))
   const generators = createGenerators(2, apiId, cipher)
-  const msgs = messagesToScalars([msgBytes], apiId, cipher)
   const randoms = [r1, r2, eTilde, r1Tilde, r3Tilde]
+  const msgs = messagesToScalars([msgBytes], apiId, cipher)
 
-  const initRes = init(pkBytes, [a, e], generators, randoms, headerBytes, msgs, [], apiId, cipher)
-  const c = challenge(initRes, msgs, [0], presentationHeaderBytes, apiId, cipher)
-  const proof = finalize(initRes, c, e, randoms, [], cipher)
+  const disclosedIndexes: Array<number> = [0]
+  const undisclosedIndexes: Array<number> = []
+  const disclosedMessages = msgs.filter((_, i) => disclosedIndexes.includes(i))
+  const undisclosedMessages = msgs.filter((_, i) => undisclosedIndexes.includes(i))
+
+  const initRes = init(pkBytes, [a, e], generators, randoms, headerBytes, msgs, undisclosedIndexes, apiId, cipher)
+  const c = challenge(initRes, disclosedMessages, disclosedIndexes, presentationHeaderBytes, apiId, cipher)
+  const proof = finalize(initRes, c, e, randoms, undisclosedMessages, cipher)
 
   assertEquals(
     bytesToHex(serialize([initRes[3]], cipher)),
@@ -358,6 +563,19 @@ Deno.test("sha-256 proof for single message", () => {
       "940cfeaa5e72104576a9ec4a6fad78c532381aeaa6fb56409cef56ee5c140d45" +
       "5feeb04426193c57086c9b6d397d9418",
   )
+
+  const verification = verify(
+    pkBytes,
+    proof,
+    generators,
+    headerBytes,
+    presentationHeaderBytes,
+    disclosedMessages,
+    disclosedIndexes,
+    apiId,
+    cipher,
+  )
+  assert(verification)
 })
 
 /**
@@ -390,7 +608,6 @@ Deno.test("sha-256 proof for multiple message, all disclosed", () => {
       "3e28f8c5f4fd0641d19cec5920d3a8ff4bedb6c9691454597bbd298288abed36" +
       "32078557b2ace7d44caed846e1a0a1e8",
   )
-  const disclosedIndexes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
   const r1 = os2ip(hexToBytes("60ca409f6b0563f687fc471c63d2819f446f39c23bb540925d9d4254ac58f337"))
   const r2 = os2ip(hexToBytes("2ceff4982de0c913090f75f081df5ec594c310bb48c17cfdaab5332a682ef811"))
@@ -405,9 +622,14 @@ Deno.test("sha-256 proof for multiple message, all disclosed", () => {
   const [a, e] = octetsToSignature(signatureBytes, cipher)
   const msgs = messagesToScalars([msg_1, msg_2, msg_3, msg_4, msg_5, msg_6, msg_7, msg_8, msg_9, msg_10], apiId, cipher)
 
-  const initRes = init(pkBytes, [a, e], generators, randoms, headerBytes, msgs, [], apiId, cipher)
-  const c = challenge(initRes, msgs, disclosedIndexes, presentationHeaderBytes, apiId, cipher)
-  const proof = finalize(initRes, c, e, randoms, [], cipher)
+  const disclosedIndexes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  const undisclosedIndexes: Array<number> = []
+  const disclosedMessages = msgs.filter((_, i) => disclosedIndexes.includes(i))
+  const undisclosedMessages = msgs.filter((_, i) => undisclosedIndexes.includes(i))
+
+  const initRes = init(pkBytes, [a, e], generators, randoms, headerBytes, msgs, undisclosedIndexes, apiId, cipher)
+  const c = challenge(initRes, disclosedMessages, disclosedIndexes, presentationHeaderBytes, apiId, cipher)
+  const proof = finalize(initRes, c, e, randoms, undisclosedMessages, cipher)
 
   assertEquals(
     bytesToHex(serialize([initRes[3]], cipher)),
@@ -433,6 +655,19 @@ Deno.test("sha-256 proof for multiple message, all disclosed", () => {
       "dc290f9801349aee7b7b4e318e6a76e028e1dea911e2e7baec6a6a174da1a223" +
       "62717fbae1cd961d7bf4adce1d31c2ab",
   )
+
+  const verification = verify(
+    pkBytes,
+    proof,
+    generators,
+    headerBytes,
+    presentationHeaderBytes,
+    disclosedMessages,
+    disclosedIndexes,
+    apiId,
+    cipher,
+  )
+  assert(verification)
 })
 
 /**
@@ -526,4 +761,17 @@ Deno.test("sha-256 proof for multiple message, partial disclosed", () => {
       "05dc25ed7c1d185192084963652f2870341bdaa4b1a37f8c06348f38a4f80c5a" +
       "2650a21d59f09e8305dcd3fc3ac30e2a",
   )
+
+  const verification = verify(
+    pkBytes,
+    proof,
+    generators,
+    headerBytes,
+    presentationHeaderBytes,
+    disclosedMessages,
+    disclosedIndexes,
+    apiId,
+    cipher,
+  )
+  assert(verification)
 })
