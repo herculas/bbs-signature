@@ -1,2 +1,2 @@
-# bbs-signature
-A typescript version of BBS signature scheme.
+# bbs-signature-rust
+A Rust implementation of the BBS signature scheme.
