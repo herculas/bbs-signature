@@ -8,13 +8,12 @@ use crate::utils::scalar::random_scalar;
 use crate::utils::serialize::Deserialize;
 use bls12_381::{G1Affine, G2Affine, G2Prepared, Gt, Scalar};
 
-/// Compute a zero-knowledge proof-of-knowledge of a signature, while optionally selectively 
-/// disclosing from the origin set of signed messages. The prover may also supply a presentation
-/// header.
+/// Compute a zero-knowledge proof-of-knowledge of a signature, while optionally selectively disclosing from the origin
+/// set of signed messages. The prover may also supply a presentation header.
 ///
-/// The message supplied in this operation MUST be in the same order as they were signed. To specify
-/// which of those messages will be disclosed, the prover can supply the list of indexes that the
-/// disclosed messages have in the array of the signed messages.
+/// The message supplied in this operation MUST be in the same order as they were signed. To specify which of those
+/// messages will be disclosed, the prover can supply the list of indexes that the disclosed messages have in the array
+/// of the signed messages.
 ///
 /// - `public_key`: an octet string representing the public key.
 /// - `signature`: a signature.
@@ -135,14 +134,14 @@ pub(super) fn prove(
     )
 }
 
-/// Check if a proof is valid for a header, vector of disclosed messages, along with their index
-/// corresponding to their original position when signed, and a presentation header, against a
-/// public key. Validating this proof guarantees the authenticity and integrity of the header
-/// and the disclosed messages, as well as the knowledge of a valid BBS Signature.
+/// Check if a proof is valid for a header, vector of disclosed messages, along with their index corresponding to their
+/// original position when signed, and a presentation header, against a public key. Validating this proof guarantees the
+/// authenticity and integrity of the header and the disclosed messages, as well as the knowledge of a valid BBS
+/// Signature.
 ///
-/// The inputted disclosed messages MUST be supplied to this operation in the same order as they
-/// were signed. Similarly, the indexes of the disclosed messages MUST be supplied in the same order
-/// as the disclosed indexes during proof generation.
+/// The inputted disclosed messages MUST be supplied to this operation in the same order as they were signed. Similarly,
+/// the indexes of the disclosed messages MUST be supplied in the same order as the disclosed indexes during proof
+/// generation.
 ///
 /// - `public_key`: an octet string representing the public key.
 /// - `proof`: a proof.

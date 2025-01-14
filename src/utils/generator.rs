@@ -7,12 +7,11 @@ use bls12_381::G1Affine;
 
 /// Create a set of randomly sampled points from the G1 group, called the generators.
 ///
-/// This operation makes use of the `expand_message` and `hash_to_curve` primitives to hash a seed
-/// to a set of generators. These primitives are implicitly defined by the `Cipher` trait.
+/// This operation makes use of the `expand_message` and `hash_to_curve` primitives to hash a seed to a set of
+/// generators. These primitives are implicitly defined by the `Cipher` trait.
 ///
 /// - `count`: the number of generators to create.
-/// - `api_id`: the API identifier to use for the hash function, if not specified, it defaults to
-///             an empty array.
+/// - `api_id`: the API identifier to use for the hash function, if not specified, it defaults to an empty array.
 /// - `cipher`: the cipher suite.
 ///
 /// Return a vector of `G1Affine` points.

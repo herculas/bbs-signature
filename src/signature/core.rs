@@ -4,8 +4,8 @@ use crate::utils::scalar::{calculate_domain, hash_to_scalar};
 use crate::utils::serialize::{Deserialize, Serialize};
 use bls12_381::{G1Affine, G1Projective, G2Affine, G2Prepared, Gt, Scalar};
 
-/// Compute a deterministic signature from a secret key, a set of messages, and optionally a header
-/// and a vector of messages.
+/// Compute a deterministic signature from a secret key, a set of messages, and optionally a header and a vector of
+/// messages.
 ///
 /// - `secret_key`: a scalar representing the secret key.
 /// - `public_key`: an octet string representing the public key.
@@ -76,7 +76,7 @@ pub(super) fn sign(
             message_serialized.as_slice(),
             domain_serialized.as_slice(),
         ]
-            .concat(),
+        .concat(),
         &hash_to_scalar_dst,
         &cipher,
     );
@@ -89,9 +89,8 @@ pub(super) fn sign(
     Signature { a, e }
 }
 
-/// Check if a given signature is valid for a given set of generators, header, and vector of
-/// messages, against a given public key. The set of messages MUST be supplied in the same order
-/// as they were signed.
+/// Check if a given signature is valid for a given set of generators, header, and vector of messages, against a given
+/// public key. The set of messages MUST be supplied in the same order as they were signed.
 ///
 /// - `public_key`: an octet string representing the public key.
 /// - `signature`: a signature.

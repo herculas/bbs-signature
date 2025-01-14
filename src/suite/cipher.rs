@@ -7,19 +7,17 @@ pub struct Cipher {
     /// The REQUIRED format for the string is `BBS_ || <h2c_suite_id> || <add_info>`, where:
     /// - `BBS_` is a constant prefix.
     /// - `<h2c_suite_id>` is the identifier of the hash-to-curve suite, and
-    /// - `<add_info>` is an optional string that indicating any additional information used to
-    ///    uniquely identify the suite. When specified, this value MUST only contain ASCII
-    ///    characters with codes between 0x21 and 0x7E, inclusive, and MUST end with an underscore.
+    /// - `<add_info>` is an optional string that indicating any additional information used to uniquely identify the
+    ///         suite. When specified, this value MUST only contain ASCII characters with codes between 0x21 and 0x7E,
+    ///         inclusive, and MUST end with an underscore.
     pub id: &'static [u8],
 
     /// A fixed point in the G1 group, different from the identity element.
     ///
-    /// This leaves the identity element free for use in other protocols, like key commitment and
-    /// proof of possession.
+    /// This leaves the identity element free for use in other protocols, like key commitment and proof of possession.
     pub singularity: [u8; LENGTH_G1_POINT],
 
-    /// A cryptographic hash function that takes an arbitrary octet string as input, and returns a
-    /// point in G1.
+    /// A cryptographic hash function that takes an arbitrary octet string as input, and returns a point in G1.
     ///
     /// - `msg`: An octet string representing the message to be hashed.
     /// - `dst`: A domain separation tag.

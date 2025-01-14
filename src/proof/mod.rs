@@ -2,9 +2,9 @@ use crate::suite::constants::{LENGTH_G1_POINT, LENGTH_SCALAR};
 use crate::utils::serialize::{Deserialize, Serialize};
 use bls12_381::{G1Affine, Scalar};
 
-mod subroutine;
 mod core;
 mod interface;
+mod subroutine;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct PreProof {
@@ -153,6 +153,9 @@ mod tests {
         let r_1_hat = Scalar::random(&mut OsRng);
         let r_3_hat = Scalar::random(&mut OsRng);
         let m_hats = vec![
+            Scalar::random(&mut OsRng),
+            Scalar::random(&mut OsRng),
+            Scalar::random(&mut OsRng),
             Scalar::random(&mut OsRng),
             Scalar::random(&mut OsRng),
             Scalar::random(&mut OsRng),

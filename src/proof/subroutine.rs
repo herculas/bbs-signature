@@ -7,17 +7,15 @@ use crate::utils::scalar::{calculate_domain, hash_to_scalar};
 use crate::utils::serialize::Serialize;
 use bls12_381::{G1Affine, G1Projective, Scalar};
 
-/// Initialize the proof and return one of the inputs passed to the challenge calculation operation.
-/// The input `message` MUST be supplied in the same order as they were signed.
+/// Initialize the proof and return one of the inputs passed to the challenge calculation operation. The input `message`
+/// MUST be supplied in the same order as they were signed.
 ///
-/// The prover need to provide the messages which are not to be disclosed. For this purpose, along
-/// with the list of signed messages, this operation also accepts a set of integers between 0 and
-/// L - 1, where L is the number of the vector of messages, in ascending order, representing the
-/// indexes of the undisclosed messages.
+/// The prover need to provide the messages which are not to be disclosed. For this purpose, along with the list of
+/// signed messages, this operation also accepts a set of integers between 0 and L - 1, where L is the number of the
+/// vector of messages, in ascending order, representing the indexes of the undisclosed messages.
 ///
-/// To blind the inputted `signature` and the undisclosed messages, this operation also accepts a
-/// set of uniformly sampled random scalars. This set MUST have exactly 5 more items than the list
-/// of undisclosed indexes.
+/// To blind the inputted `signature` and the undisclosed messages, this operation also accepts a set of uniformly
+/// sampled random scalars. This set MUST have exactly 5 more items than the list of undisclosed indexes.
 ///
 /// - `public_key`: an octet string representing the public key.
 /// - `signature`: a signature.
@@ -106,14 +104,7 @@ pub(super) fn initialize_proof(
     // 7. T_2 := D * ~r_3 + H_{j_1} * ~m_{j_1} + ... + H_{j_U} * ~m_{j_U}.
     //
     // 8. Return (A_bar, B_bar, T_1, T_2, domain).
-    let domain = calculate_domain(
-        &public_key,
-        q_1,
-        h_points.to_vec(),
-        header,
-        api_id,
-        &cipher,
-    );
+    let domain = calculate_domain(&public_key, q_1, h_points.to_vec(), header, api_id, &cipher);
     let p_1: G1Affine = G1Affine::from_compressed(&cipher.singularity).unwrap();
     let b: G1Projective = h_points.iter().zip(inner_messages.iter()).fold(
         (p_1 + q_1 * domain).into(),
@@ -143,10 +134,10 @@ pub(super) fn initialize_proof(
 
 /// Finalize the proof calculation and return the serialized proof.
 ///
-/// This operation accepts the output of the initialization operation, and a scalar representing the
-/// challenge. It also requires the scalar part `e` of the BBS Signature, the random scalars used to
-/// generate the proof, and a set of scalars representing the messages the prover wants to keep
-/// undisclosed. The undisclosed messages MUST be supplied in the same order as they were signed.
+/// This operation accepts the output of the initialization operation, and a scalar representing the challenge. It also
+/// requires the scalar part `e` of the BBS Signature, the random scalars used to generate the proof, and a set of
+/// scalars representing the messages the prover wants to keep undisclosed. The undisclosed messages MUST be supplied in
+/// the same order as they were signed.
 ///
 /// - `init_output`: the output of the initialization operation.
 /// - `challenge`: a scalar representing the challenge.
@@ -219,12 +210,11 @@ pub(super) fn finalize_proof(
     }
 }
 
-/// Initialize the proof verification and return part of the input that will be passed to the
-/// challenge calculation operation.
+/// Initialize the proof verification and return part of the input that will be passed to the challenge calculation
+/// operation.
 ///
-/// Note that the scalars representing the disclosed messages MUST be supplied in the same order as
-/// they were signed. Similarly, the indexes of the disclosed messages MUST be supplied in ascending
-/// order.
+/// Note that the scalars representing the disclosed messages MUST be supplied in the same order as they were signed.
+/// Similarly, the indexes of the disclosed messages MUST be supplied in ascending order.
 ///
 /// - `public_key`: an octet string representing the public key.
 /// - `proof`: a proof.
@@ -309,14 +299,7 @@ pub(super) fn prepare_verification(
     // 3. B_v := P_1 + Q_1 * domain + H_{i_1} * msg_{i_1} + ... + H_{i_R} * msg_{i_R}.
     // 4. T_2 := B_v * c + D * ^r_3 + H_{j_1} * ^m_{j_1} + ... + H_{j_U} * ^m_{j_U}.
     // 5. Return (A_bar, B_bar, D, T_1, T_2, domain).
-    let domain = calculate_domain(
-        &public_key,
-        q_1,
-        h_points.to_vec(),
-        header,
-        api_id,
-        &cipher,
-    );
+    let domain = calculate_domain(&public_key, q_1, h_points.to_vec(), header, api_id, &cipher);
     let t_1 = b_bar * c + a_bar * e_hat + d * r_1_hat;
     let p_1: G1Affine = G1Affine::from_compressed(&cipher.singularity).unwrap();
     let b_v: G1Projective = inner_disclosed_indexes
@@ -344,18 +327,17 @@ pub(super) fn prepare_verification(
     }
 }
 
-/// Calculate the challenge scalar used during proof generation and verification, as part of the
-/// Fiat-Shamir heuristic, for making the proof non-interactive. In an interactive setting, the
-/// challenge would be a random value sampled by the verifier.
+/// Calculate the challenge scalar used during proof generation and verification, as part of the Fiat-Shamir heuristic,
+/// for making the proof non-interactive. In an interactive setting, the challenge would be a random value sampled by
+/// the verifier.
 ///
 /// At a high level, the challenge will be calculated as the digest of the following values:
 ///     - The total number of the disclosed messages.
-///     - Each index in the `disclosed_indexes` list, followed by the corresponding disclosed
-///         message. For example, if `disclosed_indexes` is `[i_1, i_2]` and `disclosed_messages` is
-///         `[msg_{i_1}, msg_{i_2}]`, then the input will include
-///         `i_1 || msg_{i_1} || i_2 || msg_{i_2}`.
-///     - The points `A_bar`, `B_bar`, `D`, `T_1`, `T_2`, and the `domain` scalar, calculated during
-///       the proof initialization and verification operations.
+///     - Each index in the `disclosed_indexes` list, followed by the corresponding disclosed message. For example, if 
+///         `disclosed_indexes` is `[i_1, i_2]` and `disclosed_messages` is `[msg_{i_1}, msg_{i_2}]`, then the input
+///         will include `i_1 || msg_{i_1} || i_2 || msg_{i_2}`.
+///     - The points `A_bar`, `B_bar`, `D`, `T_1`, `T_2`, and the `domain` scalar, calculated during the proof 
+///         initialization and verification operations.
 ///     - The presentation header.
 ///
 /// - `init_output`: the output of the initialization operation.
@@ -432,9 +414,9 @@ pub(super) fn calculate_challenge(
         presentation_header_len,
         inner_presentation_header.to_vec(),
     ]
-        .iter()
-        .flatten()
-        .cloned()
-        .collect();
+    .iter()
+    .flatten()
+    .cloned()
+    .collect();
     hash_to_scalar(&c_octets, &hash_to_scalar_dst, &cipher)
 }

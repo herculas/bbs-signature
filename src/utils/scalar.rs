@@ -11,11 +11,10 @@ use digest::generic_array::GenericArray;
 use ff::Field;
 use rand_core::OsRng;
 
-/// Hash an arbitrary octet string to a scalar value in the multiplicative group of integers modulo
-/// the prime order `r`.
+/// Hash an arbitrary octet string to a scalar value in the multiplicative group of integers modulo the prime order `r`.
 ///
-/// This operation takes as input an octet string representing the octet string to be hashed, and a
-/// domain separation tag. The length of the tag MUST be less than 255 octets.
+/// This operation takes as input an octet string representing the octet string to be hashed, and a domain separation
+/// tag. The length of the tag MUST be less than 255 octets.
 ///
 /// - `msg`: the octet string to be hashed.
 /// - `dst`: the domain separation tag.
@@ -88,8 +87,7 @@ pub fn random_scalar(count: usize) -> Vec<Scalar> {
     (0..count).map(|_| Scalar::random(&mut OsRng)).collect()
 }
 
-/// Deterministically calculate `count` pseudo-random scalars from a single `seed`, given a domain
-/// separation tag `dst`.
+/// Deterministically calculate `count` pseudo-random scalars from a single `seed`, given a domain separation tag `dst`.
 ///
 /// - `seed`: the seed octet string.
 /// - `dst`: the domain separation tag.
@@ -139,17 +137,16 @@ pub fn seeded_random_scalars(
         .collect()
 }
 
-/// Calculate the domain value, a scalar representing the distillation of all essential contextual
-/// information for a signature. The same domain value be calculated by all parties (the signer, the
-/// prover, and the verifier) for both the signatures and the proofs to be validated.
+/// Calculate the domain value, a scalar representing the distillation of all essential contextual information for a
+/// signature. The same domain value be calculated by all parties (the signer, the prover, and the verifier) for both
+/// the signatures and the proofs to be validated.
 ///
-/// The input to the domain value includes a `header` property chosen by the signer to encode any
-/// information that is required to be revealed by the prover (such as an expiration date, or an
-/// identifier for the target audience). This in contrast to the signed message values, which may
-/// be withheld during a proof.
+/// The input to the domain value includes a `header` property chosen by the signer to encode any information that is
+/// required to be revealed by the prover (such as an expiration date, or an identifier for the target audience). This
+/// in contrast to the signed message values, which may be withheld during a proof.
 ///
-/// When a signature is generated, the domain value is combined with a specific generator point
-/// `q_1` to protect the integrity of the public parameters and the header.
+/// When a signature is generated, the domain value is combined with a specific generator point `q_1` to protect the
+/// integrity of the public parameters and the header.
 ///
 /// - `public_key`: an octet string representing the public key of the signer.
 /// - `q_1`: a generator point.
@@ -206,7 +203,7 @@ pub fn calculate_domain(
         i2osp(inner_header.len() as u64, 8),
         inner_header.to_vec(),
     ]
-        .concat();
+    .concat();
     hash_to_scalar(&dom_input, &hash_to_scalar_dst, cipher)
 }
 
@@ -219,7 +216,7 @@ mod tests {
     use crate::utils::generator::create_generator;
 
     #[test]
-    fn shake_256_message_to_scalar() {
+    fn shake_256_messages_to_scalars() {
         let msg_1 =
             hex_to_bytes("9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02");
         let msg_2 =
@@ -285,7 +282,7 @@ mod tests {
     }
 
     #[test]
-    fn sha_256_message_to_scalar() {
+    fn sha_256_messages_to_scalars() {
         let msg_1 =
             hex_to_bytes("9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02");
         let msg_2 =
