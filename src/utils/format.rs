@@ -13,7 +13,7 @@ pub fn bytes_to_hex(bytes: &[u8]) -> String {
 ///
 /// Return a vector of bytes.
 pub fn hex_to_bytes(hex: &str) -> Vec<u8> {
-    hex::decode(hex).expect("Decoding failed")
+    hex::decode(hex).expect("[Serialization] The input string should be in hex format!")
 }
 
 /// Convert a non-negative integer into an octet string of a specified length.

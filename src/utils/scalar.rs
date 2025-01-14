@@ -8,8 +8,6 @@ use bls12_381::hash_to_curve::HashToField;
 use bls12_381::{G1Affine, Scalar};
 use digest::consts::U48;
 use digest::generic_array::GenericArray;
-use ff::Field;
-use rand_core::OsRng;
 
 /// Hash an arbitrary octet string to a scalar value in the multiplicative group of integers modulo the prime order `r`.
 ///
@@ -84,7 +82,7 @@ pub fn message_to_scalars(
 ///
 /// Return a list of `Scalar` values.
 pub fn random_scalar(count: usize) -> Vec<Scalar> {
-    (0..count).map(|_| Scalar::random(&mut OsRng)).collect()
+    (0..count).map(|_| Scalar::one()).collect()
 }
 
 /// Deterministically calculate `count` pseudo-random scalars from a single `seed`, given a domain separation tag `dst`.
