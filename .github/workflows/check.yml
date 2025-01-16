@@ -1,0 +1,41 @@
+# This workflow uses actions that are not certified by GitHub. They are provided by a third-party and are governed by 
+# separate terms of service, privacy policy, and support documentation.
+
+name: Check
+
+on:
+  push:
+    branches:
+      - rust
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+
+      - name: Install dependencies
+        run: cargo fetch
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Run tests
+        run: cargo test
+
+      - name: Build wasm
+        run: wasm-pack build --target deno
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Test with Deno
+        run: deno task test
