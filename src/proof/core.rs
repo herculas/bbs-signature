@@ -4,7 +4,7 @@ use crate::proof::subroutine::{
 use crate::proof::Proof;
 use crate::signature::Signature;
 use crate::suite::cipher::Cipher;
-use crate::utils::scalar::random_scalar;
+use crate::utils::scalar::random_scalars;
 use crate::utils::serialize::Deserialize;
 use bls12_381::{G1Affine, G2Affine, G2Prepared, Gt, Scalar};
 
@@ -105,7 +105,7 @@ pub(super) fn prove(
     // 5. If challenge is INVALID, return INVALID.
     // 6. proof := proof_finalize(init_res, challenge, e, random_scalars, undisclosed_messages).
 
-    let random_scalars = random_scalar(u + 5);
+    let random_scalars = random_scalars(u + 5);
     let init_res = initialize_proof(
         public_key,
         signature,

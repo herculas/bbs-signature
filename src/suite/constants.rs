@@ -22,4 +22,6 @@ pub const PADDING_SIG_GENERATOR_DST: &[u8] = b"SIG_GENERATOR_DST_";
 
 pub const PADDING_HASH_TO_SCALAR: &[u8] = b"H2S_";
 pub const PADDING_MAP_TO_SCALAR: &[u8] = b"MAP_MSG_TO_SCALAR_AS_HASH_";
+
+#[allow(dead_code)]
 pub const PADDING_SEED_RANDOM_SCALAR: &[u8] = b"MOCK_RANDOM_SCALARS_DST_";

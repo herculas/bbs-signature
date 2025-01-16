@@ -1,15 +1,15 @@
 use crate::suite::cipher::Cipher;
+use crate::suite::constants::PADDING_KEYGEN_DST;
 use crate::utils::format::i2osp;
 use crate::utils::scalar::hash_to_scalar;
 use bls12_381::{G2Affine, Scalar};
-use crate::suite::constants::PADDING_KEYGEN_DST;
 
 /// Generate a secret key deterministically from the given material and info.
 ///
 /// - `key_material`: a secret octet string from which the secret key is derived, at least 32 bytes.
 /// - `key_info`: context-specific information to bind the secret key to a particular context. If not specified, it is
 ///         set to an empty string.
-/// - `key_dst`: an octet string representing the domain separation tag. If not specified, it is set to 
+/// - `key_dst`: an octet string representing the domain separation tag. If not specified, it is set to
 ///         "<cipher_suite_id> || KEYGEN_DST_".
 /// - `cipher`: the cipher suite to use.
 ///
@@ -42,7 +42,7 @@ pub fn generate_secret_key(
         i2osp(inner_key_info.len() as u64, 2).as_slice(),
         inner_key_info,
     ]
-        .concat();
+    .concat();
     hash_to_scalar(&derive_input, inner_key_dst, cipher)
 }
 

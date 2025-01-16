@@ -1,7 +1,10 @@
-use bls12_381::{G1Affine, G2Affine, Scalar};
-use wasm_bindgen::JsValue;
+use crate::suite::cipher::Cipher;
 use crate::suite::constants::{LENGTH_G1_POINT, LENGTH_G2_POINT, LENGTH_SCALAR};
+use crate::suite::instance::{BLS12_381_G1_XMD_SHA_256, BLS12_381_G1_XOF_SHAKE_256};
 use crate::utils::format::{bytes_to_hex, hex_to_bytes, i2osp, os2ip};
+use bls12_381::{G1Affine, G2Affine, Scalar};
+use js_sys::{try_iter, Array};
+use wasm_bindgen::JsValue;
 
 pub trait Serialize {
     fn serialize(&self) -> Vec<u8>;
@@ -46,7 +49,13 @@ impl Serialize for Scalar {
 
 impl Export for Scalar {
     fn export(&self) -> JsValue {
-        JsValue::from_str(&bytes_to_hex(&self.to_bytes()))
+        JsValue::from_str(&bytes_to_hex(&self.serialize()))
+    }
+}
+
+impl Export for Vec<u8> {
+    fn export(&self) -> JsValue {
+        JsValue::from_str(&bytes_to_hex(&self))
     }
 }
 
@@ -58,16 +67,18 @@ impl Serialize for u64 {
 
 impl Deserialize for G1Affine {
     fn deserialize(bytes: &[u8]) -> Self {
-        let bytes_array: &[u8; LENGTH_G1_POINT] =
-            bytes.try_into().expect("The provided bytes MUST be 48 bytes long!");
+        let bytes_array: &[u8; LENGTH_G1_POINT] = bytes
+            .try_into()
+            .expect("The provided bytes MUST be 48 bytes long!");
         G1Affine::from_compressed(bytes_array).unwrap()
     }
 }
 
 impl Deserialize for G2Affine {
     fn deserialize(bytes: &[u8]) -> Self {
-        let bytes_array: &[u8; LENGTH_G2_POINT] =
-            bytes.try_into().expect("The provided bytes MUST be 96 bytes long!");
+        let bytes_array: &[u8; LENGTH_G2_POINT] = bytes
+            .try_into()
+            .expect("The provided bytes MUST be 96 bytes long!");
         G2Affine::from_compressed(bytes_array).unwrap()
     }
 }
@@ -98,10 +109,44 @@ impl Import for Scalar {
 
 impl Import for Vec<u8> {
     fn import(source: &JsValue) -> Self {
-        let array: js_sys::Uint8Array = js_sys::Uint8Array::new(&source);
-        let mut bytes = vec![0; array.length() as usize];
-        array.copy_to(&mut bytes);
-        bytes
+        hex_to_bytes(&source.as_string().unwrap())
+    }
+}
+
+impl Import for Vec<usize> {
+    fn import(source: &JsValue) -> Self {
+        Array::from(source)
+            .iter()
+            .map(|val| val.as_f64().unwrap() as usize)
+            .collect()
+    }
+}
+
+pub(crate) fn import_option_bytes(raw: &JsValue) -> Option<Vec<u8>> {
+    match raw.is_undefined() || raw.is_null() {
+        true => None,
+        false => Some(Vec::import(&raw)),
+    }
+}
+
+pub(crate) fn import_option_vec_bytes(raw: &JsValue) -> Option<Vec<Vec<u8>>> {
+    match raw.is_undefined() || raw.is_null() {
+        true => None,
+        false => Some(
+            try_iter(raw)
+                .unwrap()
+                .unwrap()
+                .map(|msg| Vec::<u8>::import(&msg.unwrap()))
+                .collect(),
+        ),
+    }
+}
+
+pub(crate) fn import_cipher(name: &JsValue) -> Cipher {
+    match name.as_string().unwrap().as_str() {
+        "BLS12_381_G1_XMD_SHA_256" => BLS12_381_G1_XMD_SHA_256,
+        "BLS12_381_G1_XOF_SHAKE_256" => BLS12_381_G1_XOF_SHAKE_256,
+        _ => panic!("Invalid cipher"),
     }
 }
 

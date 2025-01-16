@@ -5,7 +5,7 @@ use bls12_381::{G1Affine, Scalar};
 use wasm_bindgen::JsValue;
 
 mod core;
-mod interface;
+pub(crate) mod interface;
 mod subroutine;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -127,68 +127,67 @@ impl Import for Proof {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::utils::serialize::{Deserialize, Serialize};
-//     use bls12_381::{G1Affine, Scalar};
-//     use ff::Field;
-//     use rand_core::OsRng;
-// 
-//     #[test]
-//     fn pre_proof_serialization() {
-//         let a_bar = G1Affine::generator() * Scalar::random(&mut OsRng);
-//         let b_bar = G1Affine::generator() * Scalar::random(&mut OsRng);
-//         let d = G1Affine::generator() * Scalar::random(&mut OsRng);
-//         let t_1 = G1Affine::generator() * Scalar::random(&mut OsRng);
-//         let t_2 = G1Affine::generator() * Scalar::random(&mut OsRng);
-//         let domain = Scalar::random(&mut OsRng);
-// 
-//         let pre_proof = PreProof {
-//             a_bar: a_bar.into(),
-//             b_bar: b_bar.into(),
-//             d: d.into(),
-//             t_1: t_1.into(),
-//             t_2: t_2.into(),
-//             domain,
-//         };
-//         let serialized = pre_proof.serialize();
-//         let deserialized = PreProof::deserialize(&serialized);
-// 
-//         assert_eq!(pre_proof, deserialized);
-//     }
-// 
-//     #[test]
-//     fn proof_serialization() {
-//         let a_bar = G1Affine::generator() * Scalar::random(&mut OsRng);
-//         let b_bar = G1Affine::generator() * Scalar::random(&mut OsRng);
-//         let d = G1Affine::generator() * Scalar::random(&mut OsRng);
-//         let e_hat = Scalar::random(&mut OsRng);
-//         let r_1_hat = Scalar::random(&mut OsRng);
-//         let r_3_hat = Scalar::random(&mut OsRng);
-//         let m_hats = vec![
-//             Scalar::random(&mut OsRng),
-//             Scalar::random(&mut OsRng),
-//             Scalar::random(&mut OsRng),
-//             Scalar::random(&mut OsRng),
-//             Scalar::random(&mut OsRng),
-//             Scalar::random(&mut OsRng),
-//             Scalar::random(&mut OsRng),
-//         ];
-//         let challenge = Scalar::random(&mut OsRng);
-// 
-//         let proof = Proof {
-//             a_bar: a_bar.into(),
-//             b_bar: b_bar.into(),
-//             d: d.into(),
-//             e_hat,
-//             r_1_hat,
-//             r_3_hat,
-//             m_hats,
-//             challenge,
-//         };
-//         let serialized = proof.serialize();
-//         let deserialized = Proof::deserialize(&serialized);
-//         assert_eq!(proof, deserialized);
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::utils::scalar::random_scalar;
+    use crate::utils::serialize::{Deserialize, Serialize};
+    use bls12_381::G1Affine;
+
+    #[test]
+    fn pre_proof_serialization() {
+        let a_bar = G1Affine::generator() * random_scalar();
+        let b_bar = G1Affine::generator() * random_scalar();
+        let d = G1Affine::generator() * random_scalar();
+        let t_1 = G1Affine::generator() * random_scalar();
+        let t_2 = G1Affine::generator() * random_scalar();
+        let domain = random_scalar();
+
+        let pre_proof = PreProof {
+            a_bar: a_bar.into(),
+            b_bar: b_bar.into(),
+            d: d.into(),
+            t_1: t_1.into(),
+            t_2: t_2.into(),
+            domain,
+        };
+        let serialized = pre_proof.serialize();
+        let deserialized = PreProof::deserialize(&serialized);
+
+        assert_eq!(pre_proof, deserialized);
+    }
+
+    #[test]
+    fn proof_serialization() {
+        let a_bar = G1Affine::generator() * random_scalar();
+        let b_bar = G1Affine::generator() * random_scalar();
+        let d = G1Affine::generator() * random_scalar();
+        let e_hat = random_scalar();
+        let r_1_hat = random_scalar();
+        let r_3_hat = random_scalar();
+        let m_hats = vec![
+            random_scalar(),
+            random_scalar(),
+            random_scalar(),
+            random_scalar(),
+            random_scalar(),
+            random_scalar(),
+            random_scalar(),
+        ];
+        let challenge = random_scalar();
+
+        let proof = Proof {
+            a_bar: a_bar.into(),
+            b_bar: b_bar.into(),
+            d: d.into(),
+            e_hat,
+            r_1_hat,
+            r_3_hat,
+            m_hats,
+            challenge,
+        };
+        let serialized = proof.serialize();
+        let deserialized = Proof::deserialize(&serialized);
+        assert_eq!(proof, deserialized);
+    }
+}

@@ -5,7 +5,7 @@ use bls12_381::{G1Affine, Scalar};
 use wasm_bindgen::JsValue;
 
 mod core;
-mod interface;
+pub(crate) mod interface;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Signature {
@@ -42,21 +42,20 @@ impl Import for Signature {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use ff::Field;
-//     use rand_core::OsRng;
-// 
-//     #[test]
-//     fn test_serialize_signature() {
-//         let signature = Signature {
-//             a: (G1Affine::generator() * Scalar::random(&mut OsRng)).into(),
-//             e: Scalar::random(&mut OsRng),
-//         };
-//         let serialized = signature.serialize();
-//         let deserialized = Signature::deserialize(&serialized);
-// 
-//         assert_eq!(signature, deserialized);
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::utils::scalar::random_scalar;
+
+    #[test]
+    fn test_serialize_signature() {
+        let signature = Signature {
+            a: (G1Affine::generator() * random_scalar()).into(),
+            e: random_scalar(),
+        };
+        let serialized = signature.serialize();
+        let deserialized = Signature::deserialize(&serialized);
+
+        assert_eq!(signature, deserialized);
+    }
+}

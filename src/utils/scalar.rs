@@ -8,6 +8,7 @@ use bls12_381::hash_to_curve::HashToField;
 use bls12_381::{G1Affine, Scalar};
 use digest::consts::U48;
 use digest::generic_array::GenericArray;
+use getrandom::getrandom;
 
 /// Hash an arbitrary octet string to a scalar value in the multiplicative group of integers modulo the prime order `r`.
 ///
@@ -75,14 +76,38 @@ pub fn message_to_scalars(
         .collect()
 }
 
+/// Sample a random scalar value.
+///
+/// Return a `Scalar` value.
+#[allow(dead_code)]
+pub fn random_scalar() -> Scalar {
+    let mut buf = [0u8; LENGTH_MESSAGE_EXPAND];
+    getrandom(&mut buf).unwrap();
+    let array: GenericArray<u8, U48> = GenericArray::clone_from_slice(&buf);
+    Scalar::from_okm(&array)
+}
+
 /// Sample the requested number of random scalar values.
 ///
 /// - `count`: the number of scalar values to sample.
 /// - `cipher`: the cipher suite.
 ///
 /// Return a list of `Scalar` values.
-pub fn random_scalar(count: usize) -> Vec<Scalar> {
-    (0..count).map(|_| Scalar::one()).collect()
+pub fn random_scalars(count: usize) -> Vec<Scalar> {
+    // (0..count).map(|_| Scalar::one()).collect()
+    // Procedure:
+    //
+    // 1. For i in (1, 2, ..., count):
+    // 2.   scalar_i := os2ip(get_random(expand_len)) mod r.
+    // 3. Return (scalar_1, scalar_2, ..., scalar_count).
+    (0..count)
+        .map(|_| {
+            let mut buf = [0u8; LENGTH_MESSAGE_EXPAND];
+            getrandom(&mut buf).unwrap();
+            let array: GenericArray<u8, U48> = GenericArray::clone_from_slice(&buf);
+            Scalar::from_okm(&array)
+        })
+        .collect()
 }
 
 /// Deterministically calculate `count` pseudo-random scalars from a single `seed`, given a domain separation tag `dst`.
@@ -93,6 +118,7 @@ pub fn random_scalar(count: usize) -> Vec<Scalar> {
 /// - `cipher`: the cipher suite.
 ///
 /// Return the requested number of pseudo-random scalars.
+#[allow(dead_code)]
 pub fn seeded_random_scalars(
     seed: &[u8],
     dst: &[u8],
