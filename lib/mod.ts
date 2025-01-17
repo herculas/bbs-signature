@@ -10,7 +10,7 @@ import {
 type Cipher = "BLS12_381_G1_XOF_SHAKE_256" | "BLS12_381_G1_XMD_SHA_256"
 
 /**
- * Generate a secret key deterministically from a secret octet string.
+ * Generate a secret key deterministically from a secret material and an optional key information string.
  *
  * @param {string} material A secret string from which to generate the secret key, at least 32 bytes.
  * @param {string} [info] A context-specific information to bind the secret key to a particular context.
@@ -36,6 +36,27 @@ export function generateSecretKey(material: string, info: string | undefined, ds
  */
 export function derivePublicKey(secretKey: string): string {
   return derive_public_key(secretKey)
+}
+
+/**
+ * Generate a keypair deterministically from a secret key material string.
+ * 
+ * @param {string} material A secret string from which to generate the secret key, at least 32 bytes.
+ * @param {string} [info] A context-specific information to bind the secret key to a particular context.
+ * @param {string} dst A string representing the domain separation tag.
+ * @param {Cipher} cipher The cipher suite.
+ * 
+ * @returns {secretKey: string, publicKey: string} An object containing the secret key and the public key.
+ */
+export function generateKeypair(
+  material: string,
+  info: string | undefined,
+  dst: string,
+  cipher: Cipher,
+): { secretKey: string; publicKey: string } {
+  const secretKey = generateSecretKey(material, info, dst, cipher)
+  const publicKey = derivePublicKey(secretKey)
+  return { secretKey, publicKey }
 }
 
 /**

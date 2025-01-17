@@ -1,4 +1,8 @@
 {
+  "name": "@crumble-jon/bbs-signature",
+  "version": "0.1.1",
+  "license": "MIT",
+  "exports": "./lib/mod.ts",
   "tasks": {
     "test": "deno test --allow-read"
   },
