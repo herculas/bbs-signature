@@ -1,7 +1,7 @@
 # This workflow uses actions that are not certified by GitHub. They are provided by a third-party and are governed by 
 # separate terms of service, privacy policy, and support documentation.
 
-name: Check
+name: Release
 
 on:
   push:
@@ -13,29 +13,39 @@ env:
 
 jobs:
   build:
+    name: Build
+    if: ${{ contains(github.event.head_commit.message, '[release]') }}
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install wasm-pack
+      - name: Wasm-pack Installation
         run: cargo install wasm-pack
 
-      - name: Install dependencies
+      - name: Rust Dependencies
         run: cargo fetch
 
-      - name: Build
+      - name: Rust Build
         run: cargo build --release
 
-      - name: Run tests
+      - name: Rust Test
         run: cargo test
 
-      - name: Build wasm
+      - name: Wasm Build
         run: wasm-pack build --target deno
 
-      - name: Setup Deno
+      - name: Deno Setup
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
 
-      - name: Test with Deno
+      - name: Deno Test
         run: deno task test
+
+      - name: Publish
+        run: deno publish

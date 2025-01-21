@@ -14,14 +14,19 @@ type Cipher = "BLS12_381_G1_XOF_SHAKE_256" | "BLS12_381_G1_XMD_SHA_256"
  *
  * @param {string} material A secret string from which to generate the secret key, at least 32 bytes.
  * @param {string} [info] A context-specific information to bind the secret key to a particular context.
- * @param {string} dst A string representing the domain separation tag.
+ * @param {string} [dst] A string representing the domain separation tag.
  * @param {Cipher} cipher The cipher suite.
  *
  * @returns {string} A hex-encoded uniformly random integer in the range [1, r - 1].
  *
  * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07#name-secret-key
  */
-export function generateSecretKey(material: string, info: string | undefined, dst: string, cipher: Cipher): string {
+export function generateSecretKey(
+  material: string,
+  info: string | undefined,
+  dst: string | undefined,
+  cipher: Cipher,
+): string {
   return generate_secret_key(material, info, dst, cipher)
 }
 
@@ -40,18 +45,18 @@ export function derivePublicKey(secretKey: string): string {
 
 /**
  * Generate a keypair deterministically from a secret key material string.
- * 
+ *
  * @param {string} material A secret string from which to generate the secret key, at least 32 bytes.
  * @param {string} [info] A context-specific information to bind the secret key to a particular context.
- * @param {string} dst A string representing the domain separation tag.
+ * @param {string} [dst] A string representing the domain separation tag.
  * @param {Cipher} cipher The cipher suite.
- * 
+ *
  * @returns {secretKey: string, publicKey: string} An object containing the secret key and the public key.
  */
 export function generateKeypair(
   material: string,
   info: string | undefined,
-  dst: string,
+  dst: string | undefined,
   cipher: Cipher,
 ): { secretKey: string; publicKey: string } {
   const secretKey = generateSecretKey(material, info, dst, cipher)
