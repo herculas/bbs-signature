@@ -1,6 +1,6 @@
 # bbs-signature
 
-[![Check](https://github.com/herculas/bbs-signature/actions/workflows/check.yml/badge.svg?branch=rust)](https://github.com/herculas/bbs-signature/actions/workflows/check.yml)
+[![Release](https://github.com/herculas/bbs-signature/actions/workflows/release.yml/badge.svg)](https://github.com/herculas/bbs-signature/actions/workflows/release.yml)
 
 BBS Signature implementation written in Rust and compiled to WASM for JavaScript and TypeScript usage. The interface
 specifications are compatible with the
