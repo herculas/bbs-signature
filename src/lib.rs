@@ -12,6 +12,7 @@ mod proof;
 mod signature;
 mod suite;
 mod utils;
+mod blind;
 
 #[wasm_bindgen]
 pub fn generate_secret_key(
