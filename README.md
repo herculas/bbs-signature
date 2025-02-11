@@ -34,7 +34,10 @@ three key features:
 
 The following flowchart illustrates the key participants and data flows in this scheme.
 
-![Basic diagram capturing the main entities involved in using the BBS Signature scheme.](./assets/readme/bbs-signature.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/readme/bbs-signature-dark.png">
+  <img alt="Basic diagram capturing the main entities involved in using the BBS Signature scheme." src="./assets/readme/bbs-signature-light.png">
+</picture>
 
 ### Blind BBS Signature
 
@@ -51,7 +54,10 @@ the commitments.
 
 The following flowchart illustrates the key participants and data flows in the blind signature scheme.
 
-![Basic diagram capturing the main entities involved in using the Blind BBS Signature scheme.](./assets/readme/blind-bbs-signature.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/readme/blind-bbs-signature-dark.png">
+  <img alt="Basic diagram capturing the main entities involved in using the Blind BBS Signature scheme." src="./assets/readme/blind-bbs-signature-light.png">
+</picture>
 
 ### Pseudonym BBS Signature
 
