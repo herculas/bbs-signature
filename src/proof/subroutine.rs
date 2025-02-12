@@ -58,6 +58,7 @@ pub(super) fn initialize_proof(
     // 9. (Q_1, msg_generators) := generators.
     // 10. (H_1, ..., H_L) := msg_generators.
     // 11. (H_{j_1}, ..., H_{j_U}) := (msg_generators[j_1], ..., msg_generators[j_U]).
+
     let a = signature.a;
     let e = signature.e;
     let l = inner_messages.len();
@@ -82,6 +83,7 @@ pub(super) fn initialize_proof(
     //
     // 1. For i in undisclosed_indexes, i < 0 or i > L - 1.
     // 2. U > L.
+
     inner_undisclosed_indexes.iter().for_each(|&i| {
         if i >= l {
             panic!("The undisclosed indexes must be in the range [0, L - 1].");
@@ -104,6 +106,7 @@ pub(super) fn initialize_proof(
     // 7. T_2 := D * ~r_3 + H_{j_1} * ~m_{j_1} + ... + H_{j_U} * ~m_{j_U}.
     //
     // 8. Return (A_bar, B_bar, T_1, T_2, domain).
+
     let domain = calculate_domain(&public_key, q_1, h_points.to_vec(), header, api_id, &cipher);
     let p_1: G1Affine = G1Affine::from_compressed(&cipher.singularity).unwrap();
     let b: G1Projective = h_points.iter().zip(inner_messages.iter()).fold(
@@ -163,6 +166,7 @@ pub(super) fn finalize_proof(
     // 3. (r_1, r_2, ~e, ~r_1, ~r_3, ~m_{j_1}, ~m_{j_2}, ..., ~m_{j_U}) := random_scalars.
     // 4. (undisclosed_1, undisclosed_2, ..., undisclosed_U) := undisclosed_messages.
     // 5. (A_bar, B_bar, D, _, _, _) := init_output.
+
     let u = inner_undisclosed_messages.len();
     if random_scalars.len() != u + 5 {
         panic!("the number of random scalars must be equal to the number of undisclosed messages plus five");
@@ -188,6 +192,7 @@ pub(super) fn finalize_proof(
     //
     // 6. proof := (A_bar, B_bar, D, ^e, ^r_1, ^r_3, (^m_{j_1}, ..., ^m_{j_U}), challenge).
     // 7. Return proof_to_octets(proof).
+
     let r_3 = r_2.invert().unwrap();
     let e_hat = e_tilde + e * challenge;
     let r_1_hat = r_1_tilde - r_1 * challenge;
@@ -259,6 +264,7 @@ pub(super) fn prepare_verification(
     // 13. (H_1, ..., H_L) := msg_generators.
     // 14. (H_{i_1}, ..., H_{i_R}) := (msg_generators[i_1], ..., msg_generators[i_R]).
     // 15. (H_{j_1}, ..., H_{j_U}) := (msg_generators[j_1], ..., msg_generators[j_U]).
+
     let a_bar = proof.a_bar;
     let b_bar = proof.b_bar;
     let d = proof.d;
@@ -299,6 +305,7 @@ pub(super) fn prepare_verification(
     // 3. B_v := P_1 + Q_1 * domain + H_{i_1} * msg_{i_1} + ... + H_{i_R} * msg_{i_R}.
     // 4. T_2 := B_v * c + D * ^r_3 + H_{j_1} * ^m_{j_1} + ... + H_{j_U} * ^m_{j_U}.
     // 5. Return (A_bar, B_bar, D, T_1, T_2, domain).
+
     let domain = calculate_domain(&public_key, q_1, h_points.to_vec(), header, api_id, &cipher);
     let t_1 = b_bar * c + a_bar * e_hat + d * r_1_hat;
     let p_1: G1Affine = G1Affine::from_compressed(&cipher.singularity).unwrap();
@@ -333,10 +340,10 @@ pub(super) fn prepare_verification(
 ///
 /// At a high level, the challenge will be calculated as the digest of the following values:
 ///     - The total number of the disclosed messages.
-///     - Each index in the `disclosed_indexes` list, followed by the corresponding disclosed message. For example, if 
+///     - Each index in the `disclosed_indexes` list, followed by the corresponding disclosed message. For example, if
 ///         `disclosed_indexes` is `[i_1, i_2]` and `disclosed_messages` is `[msg_{i_1}, msg_{i_2}]`, then the input
 ///         will include `i_1 || msg_{i_1} || i_2 || msg_{i_2}`.
-///     - The points `A_bar`, `B_bar`, `D`, `T_1`, `T_2`, and the `domain` scalar, calculated during the proof 
+///     - The points `A_bar`, `B_bar`, `D`, `T_1`, `T_2`, and the `domain` scalar, calculated during the proof
 ///         initialization and verification operations.
 ///     - The presentation header.
 ///
@@ -365,8 +372,8 @@ pub(super) fn calculate_challenge(
 
     // Definition:
     //
-    // 1. hash_to_scalar_dst: an octet string representing the domain separation tag:
-    //          "<api_id> || H2S_".
+    // 1. hash_to_scalar_dst: an octet string representing the domain separation tag: "<api_id> || H2S_".
+
     let hash_to_scalar_dst = [inner_api_id, PADDING_HASH_TO_SCALAR].concat();
 
     // Deserialization:
@@ -376,6 +383,7 @@ pub(super) fn calculate_challenge(
     // 3. If len(disclosed_messages) != R, return INVALID.
     // 4. (msg_{i_1}, msg_{i_2}, ..., msg_{i_R}) := disclosed_messages.
     // 5. (A_bar, B_bar, D, T_1, T_2, domain) := init_output.
+
     let r = inner_disclosed_indexes.len();
     if inner_disclosed_messages.len() != r {
         panic!("the number of disclosed messages must be equal to the number of disclosed indexes");
@@ -385,6 +393,7 @@ pub(super) fn calculate_challenge(
     //
     // 1. R > 2^64 - 1.
     // 2. len(presentation_header) > 2^64 - 1.
+
     if r > usize::MAX {
         panic!("the number of disclosed indexes must be less than 2^64 - 1");
     }
@@ -399,6 +408,7 @@ pub(super) fn calculate_challenge(
     //          A_bar, B_bar, D, T_1, T_2, domain).
     // 2. c_octets := serialize(c_arr) || i2osp(len(presentation_header), 8) || presentation_header.
     // 3. Return hash_to_scalar(c_octets, hash_to_scalar_dst).
+
     let r_serialized = (r as u64).serialize();
     let disclosed_indexes_serialized: Vec<u8> = inner_disclosed_indexes
         .iter()

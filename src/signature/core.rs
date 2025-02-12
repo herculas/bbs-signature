@@ -32,8 +32,8 @@ pub(super) fn sign(
 
     // Definitions:
     //
-    // - hash_to_scalar_dst: an octet string representing the domain separation tag:
-    //                       "<api_id> || H2S_".
+    // - hash_to_scalar_dst: an octet string representing the domain separation tag: "<api_id> || H2S_".
+
     let hash_to_scalar_dst = [inner_api_id, b"H2S_"].concat();
 
     // Deserialization:
@@ -42,6 +42,7 @@ pub(super) fn sign(
     // 2. If len(generators) != L + 1, return INVALID.
     // 3. (msg_1, msg_2, ..., msg_L) := messages.
     // 4. (Q_1, H_1, ..., H_L) := generators.
+
     let l = inner_messages.len();
     if generators.len() != l + 1 {
         panic!("the number of generators must be equal to the number of messages plus one");
@@ -56,6 +57,7 @@ pub(super) fn sign(
     // 3. B := P_1 + Q_1 * domain + H_1 * msg_1 + ... + H_L * msg_L.
     // 4. A := B * (1 / (secret_key + e)).
     // 5. Return (A, e).
+
     let domain = calculate_domain(
         &public_key,
         q_1,
@@ -101,7 +103,7 @@ pub(super) fn sign(
 /// - `cipher`: a cipher suite.
 ///
 /// Return `true` if the signature is valid, `false` otherwise.
-pub(super) fn verify(
+pub(crate) fn verify(
     public_key: &[u8],
     signature: &Signature,
     generators: &Vec<G1Affine>,
@@ -126,6 +128,7 @@ pub(super) fn verify(
     // 7. If len(generators) != L + 1, return INVALID.
     // 8. (msg_1, msg_2, ..., msg_L) := messages.
     // 9. (Q_1, H_1, ..., H_L) := generators.
+
     let a = signature.a;
     let e = signature.e;
     let w = G2Affine::deserialize(&public_key);
@@ -142,6 +145,7 @@ pub(super) fn verify(
     // 2. B := P_1 + Q_1 * domain + H_1 * msg_1 + ... + H_L * msg_L.
     // 3. If h(A, W + BP2 * e) * h(B, -BP2) != Identity_GT, return INVALID.
     // 4. Return VALID.
+
     let domain = calculate_domain(
         &public_key,
         q_1,

@@ -73,12 +73,13 @@ pub fn prepare_parameters(
 ///
 /// Return an element from the G1 subgroup, or INVALID.
 pub fn calculate_b(
-    generators: Vec<G1Affine>,
-    commitment: Option<G1Affine>,
+    generators: &Vec<G1Affine>,
+    commitment: Option<&G1Affine>,
     messages: Option<&Vec<Scalar>>,
 ) -> G1Projective {
+    let default_point = G1Affine::identity();
     let empty_message_vec = vec![];
-    let inner_commitment = commitment.unwrap_or(G1Affine::identity());
+    let inner_commitment = commitment.unwrap_or(&default_point);
     let inner_messages = messages.unwrap_or(&empty_message_vec);
 
     // Deserialization:
@@ -87,6 +88,7 @@ pub fn calculate_b(
     // 2. If len(generators) != L + 1, return INVALID.
     // 3. (Q_1, H_1, ..., H_L) := generators.
     // 4. (msg_1, ..., msg_L) := messages.
+
     let l = inner_messages.len();
     if generators.len() != l + 1 {
         panic!("the number of generators must be equal to the number of messages plus one");
@@ -99,6 +101,7 @@ pub fn calculate_b(
     // 1. B := Q_1 + H_1 * msg_1 + ... + H_L * msg_L + commitment.
     // 2. If B is the Identity_G1 point, return INVALID.
     // 3. Return B.
+
     let mut b: G1Projective = h_points
         .iter()
         .zip(inner_messages.iter())
@@ -125,7 +128,7 @@ pub fn calculate_b(
 pub fn calculate_blind_challenge(
     c: &G1Affine,
     c_bar: &G1Affine,
-    generators: Vec<G1Affine>,
+    generators: &Vec<G1Affine>,
     api_id: Option<&[u8]>,
     cipher: &Cipher,
 ) -> Scalar {
@@ -134,12 +137,14 @@ pub fn calculate_blind_challenge(
     // Definitions:
     //
     // - hash_to_scalar_dst: an octet string representing the domain separation tag: "<api_id> || H2S_".
+
     let hash_to_scalar_dst = [inner_api_id, PADDING_HASH_TO_SCALAR].concat();
 
     // Deserialization:
     //
     // 1. If len(generators) < 1, return INVALID.
     // 2. M := len(generators) - 1.
+
     if generators.len() < 1 {
         panic!("The number of generators must be at least one");
     }
@@ -152,7 +157,6 @@ pub fn calculate_blind_challenge(
     // 3. c_octets := serialize(c_arr.append(c, c_bar)).
     // 4. Return hash_to_scalar(c_octets, hash_to_scalar_dst).
 
-    // serialize the number M
     let m_bytes = (m as u64).serialize();
     let generators_bytes: Vec<u8> = generators.iter().flat_map(|g| g.serialize()).collect();
     let c_bytes = c.serialize();

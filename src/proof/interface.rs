@@ -22,7 +22,7 @@ use crate::utils::scalar::messages_to_scalars;
 /// - `cipher`: a cipher suite.
 ///
 /// Return a BBS proof.
-pub fn prove(
+pub(crate) fn prove(
     public_key: &[u8],
     signature: &Signature,
     header: Option<&[u8]>,
@@ -37,6 +37,7 @@ pub fn prove(
     // Parameters:
     //
     // - api_id: an octet string "<cipher_suite_id> || H2G_HM2S_".
+
     let api_id = [cipher.id, PADDING_API_ID].concat();
 
     // Procedure:
@@ -55,6 +56,7 @@ pub fn prove(
     //          cipher).
     // 4. If proof is INVALID, return INVALID.
     // 5. Return proof.
+
     let message_scalars = messages_to_scalars(inner_messages, Some(&api_id), cipher);
     let generators = create_generators(inner_messages.len() + 1, Some(&api_id), cipher);
     super::core::prove(
@@ -85,7 +87,7 @@ pub fn prove(
 /// - `cipher`: a cipher suite.
 ///
 /// Return `true` if the proof is valid, `false` otherwise.
-pub fn verify(
+pub(crate) fn verify(
     public_key: &[u8],
     proof: &Proof,
     header: Option<&[u8]>,
@@ -102,6 +104,7 @@ pub fn verify(
     // - api_id: an octet string "<cipher_suite_id> || H2G_HM2S_".
     // - octet_point_length: the length of the octet string representation of a G1 point.
     // - octet_scalar_length: the length of the octet string representation of a scalar.
+
     let api_id = [cipher.id, PADDING_API_ID].concat();
 
     // Deserialization:
@@ -110,6 +113,7 @@ pub fn verify(
     // 2. If len(proof) < proof_len_floor, return INVALID.
     // 3. U := floor((len(proof) - proof_len_floor) / octet_scalar_length).
     // 4. R := len(disclosed_indexes).
+
     let u = proof.m_hats.len();
     let r = inner_disclosed_messages.len();
 
@@ -128,6 +132,7 @@ pub fn verify(
     //          api_id,
     //          cipher).
     // 4. Return result.
+
     let message_scalars = messages_to_scalars(inner_disclosed_messages, Some(&api_id), cipher);
     let generators = create_generators(u + r + 1, Some(&api_id), cipher);
     super::core::verify(

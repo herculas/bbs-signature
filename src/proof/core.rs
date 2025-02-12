@@ -26,7 +26,7 @@ use bls12_381::{G1Affine, G2Affine, G2Prepared, Gt, Scalar};
 /// - `cipher`: a cipher suite.
 ///
 /// Return a proof.
-pub(super) fn prove(
+pub(crate) fn prove(
     public_key: &[u8],
     signature: &Signature,
     generators: &Vec<G1Affine>,
@@ -59,6 +59,7 @@ pub(super) fn prove(
     //
     // 12. disclosed_messages := (messages[i_1], messages[i_2], ..., messages[i_R]).
     // 13. undisclosed_messages := (messages[j_1], messages[j_2], ..., messages[j_U]).
+
     let e = signature.e;
     let l = inner_messages.len();
     let r = inner_disclosed_indexes.len();
@@ -154,7 +155,7 @@ pub(super) fn prove(
 /// - `cipher`: a cipher suite.
 ///
 /// Return `true` if the proof is valid, `false` otherwise.
-pub(super) fn verify(
+pub(crate) fn verify(
     public_key: &[u8],
     proof: &Proof,
     generators: &Vec<G1Affine>,
@@ -171,6 +172,7 @@ pub(super) fn verify(
     // 2. If proof_result is INVALID, return INVALID.
     // 3. (A_bar, B_bar, D, hat_e, hat_r_1, hat_r_3, commitments, cp) := proof_result.
     // 4. W := octet_to_public_key(public_key).
+
     let a_bar = proof.a_bar;
     let b_bar = proof.b_bar;
     let cp = proof.challenge;
@@ -196,6 +198,7 @@ pub(super) fn verify(
     // 5. If cp != challenge, return INVALID.
     // 6. If h(A_bar, W) * h(B_bar, g_2) != Identity_GT, return INVALID.
     // 7. Return VALID.
+
     let init_res = prepare_verification(
         public_key,
         proof,

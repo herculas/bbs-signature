@@ -23,9 +23,11 @@ pub fn sign(
 ) -> Signature {
     let empty_vec = vec![];
     let inner_messages = messages.unwrap_or(&empty_vec);
+
     // Parameters:
     //
     // - api_id: an octet string "<cipher_suite_id> || H2G_HM2S_".
+
     let api_id = [cipher.id, PADDING_API_ID].concat();
 
     // Procedure:
@@ -42,6 +44,7 @@ pub fn sign(
     //          cipher).
     // 4. If signature is INVALID, return INVALID.
     // 5. Return signature.
+
     let message_scalars = messages_to_scalars(inner_messages, Some(&api_id), &cipher);
     let generators = create_generators(inner_messages.len() + 1, Some(&api_id), &cipher);
     super::core::sign(
@@ -73,9 +76,11 @@ pub fn verify(
 ) -> bool {
     let empty_vec = vec![];
     let inner_messages = messages.unwrap_or(&empty_vec);
+
     // Parameters:
     //
     // - api_id: an octet string "<cipher_suite_id> || H2G_HM2S_".
+
     let api_id = [cipher.id, PADDING_API_ID].concat();
 
     // Procedure:
@@ -91,6 +96,7 @@ pub fn verify(
     //          api_id,
     //          cipher).
     // 4. Return result.
+
     let message_scalars = messages_to_scalars(inner_messages, Some(&api_id), &cipher);
     let generators = create_generators(inner_messages.len() + 1, Some(&api_id), &cipher);
     super::core::verify(

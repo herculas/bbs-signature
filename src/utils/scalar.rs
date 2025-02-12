@@ -53,13 +53,14 @@ pub fn messages_to_scalars(
 
     // Definition:
     //
-    // 1. map_dst: an octet string representing the domain separation tag:
-    //             "<api_id> || MAP_MSG_TO_SCALAR_AS_HASH_".
+    // 1. map_dst: an octet string representing the domain separation tag: "<api_id> || MAP_MSG_TO_SCALAR_AS_HASH_".
+
     let map_dst = [inner_api_id, PADDING_MAP_TO_SCALAR].concat();
 
     // ABORT IF:
     //
     // 1. len(messages) > 2^64 - 1.
+
     if messages.len() > usize::MAX {
         panic!("messages is too long");
     }
@@ -70,6 +71,7 @@ pub fn messages_to_scalars(
     // 2. For i in (1, 2, ..., L):
     // 3.     msg_scalar_i := hash_to_scalar(messages[i], map_dst).
     // 4. Return (msg_scalar_1, msg_scalar_2, ..., msg_scalar_L).
+
     messages
         .iter()
         .map(|msg| hash_to_scalar(msg, &map_dst, cipher))
@@ -100,6 +102,7 @@ pub fn random_scalars(count: usize) -> Vec<Scalar> {
     // 1. For i in (1, 2, ..., count):
     // 2.   scalar_i := os2ip(get_random(expand_len)) mod r.
     // 3. Return (scalar_1, scalar_2, ..., scalar_count).
+
     (0..count)
         .map(|_| {
             let mut buf = [0u8; LENGTH_MESSAGE_EXPAND];
@@ -128,6 +131,7 @@ pub fn seeded_random_scalars(
     // ABORT IF:
     //
     // 1. count * expand_len > 65535.
+
     if count * LENGTH_MESSAGE_EXPAND > 65535 {
         panic!("seeded_random_scalars: count * expand_len too large");
     }
@@ -143,6 +147,7 @@ pub fn seeded_random_scalars(
     // 6.     end_idx := i * expand_len - 1.
     // 7.     scalar_i := os2ip(v[start_idx..end_idx]) mod r.
     // 8. Return (scalar_1, scalar_2, ..., scalar_count).
+
     let out_len = LENGTH_MESSAGE_EXPAND * count;
     let v = (cipher.expand_message)(seed, dst, Some(out_len));
 
@@ -193,19 +198,21 @@ pub fn calculate_domain(
 
     // definitions:
     //
-    // 1. hash_to_scalar_dst: an octet string representing the domain separation tag:
-    //                        "<api_id> || H2S_".
+    // 1. hash_to_scalar_dst: an octet string representing the domain separation tag: "<api_id> || H2S_".
+
     let hash_to_scalar_dst = [inner_api_id, PADDING_HASH_TO_SCALAR].concat();
 
     // Deserialization:
     //
     // 1. L := len(h_points).
     // 2. (h_1, h_2, ..., h_L) := h_points.
+
     let l = h_points.len();
 
     // ABORT IF:
     //
     // 1. len(header) > 2^64 - 1, or L > 2^64 - 1.
+
     if inner_header.len() > usize::MAX || l > usize::MAX {
         panic!("header or L is too long");
     }
@@ -216,6 +223,7 @@ pub fn calculate_domain(
     // 2. dom_octets := serialize(dom_array) || api_id.
     // 3. dom_input := public_key || dom_octets || i2osp(len(header), 8) || header.
     // 4. Return hash_to_scalar(dom_input, hash_to_scalar_dst).
+
     let l_bytes = (l as u64).serialize();
     let q_1_bytes: Vec<u8> = q_1.serialize();
     let h_points_bytes: Vec<u8> = h_points.iter().flat_map(|h| h.serialize()).collect();

@@ -4,7 +4,7 @@ use crate::utils::serialize::{Deserialize, Export, Import, Serialize};
 use bls12_381::{G1Affine, Scalar};
 use wasm_bindgen::JsValue;
 
-mod core;
+pub(crate) mod core;
 pub(crate) mod interface;
 mod subroutine;
 
@@ -58,7 +58,7 @@ pub(crate) struct Proof {
     e_hat: Scalar,
     r_1_hat: Scalar,
     r_3_hat: Scalar,
-    m_hats: Vec<Scalar>,
+    pub(crate) m_hats: Vec<Scalar>,
     challenge: Scalar,
 }
 

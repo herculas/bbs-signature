@@ -4,7 +4,7 @@ use crate::utils::serialize::{Deserialize, Export, Import, Serialize};
 use bls12_381::{G1Affine, Scalar};
 use wasm_bindgen::JsValue;
 
-mod core;
+pub(crate) mod core;
 pub(crate) mod interface;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
