@@ -1,4 +1,5 @@
-use crate::suite::constants::LENGTH_G1_POINT;
+use super::constants::LENGTH_G1_POINT;
+
 use bls12_381::{G1Affine, G2Prepared, Gt};
 
 pub struct Cipher {

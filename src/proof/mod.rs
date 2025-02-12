@@ -1,10 +1,12 @@
 use crate::suite::constants::{LENGTH_G1_POINT, LENGTH_SCALAR};
+
 use crate::utils::format::{bytes_to_hex, hex_to_bytes};
 use crate::utils::serialize::{Deserialize, Export, Import, Serialize};
+
 use bls12_381::{G1Affine, Scalar};
 use wasm_bindgen::JsValue;
 
-pub(crate) mod core;
+mod core;
 pub(crate) mod interface;
 mod subroutine;
 
@@ -58,7 +60,7 @@ pub(crate) struct Proof {
     e_hat: Scalar,
     r_1_hat: Scalar,
     r_3_hat: Scalar,
-    pub(crate) m_hats: Vec<Scalar>,
+    m_hats: Vec<Scalar>,
     challenge: Scalar,
 }
 

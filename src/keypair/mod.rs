@@ -1,8 +1,12 @@
 use crate::suite::cipher::Cipher;
 use crate::suite::constants::PADDING_KEYGEN_DST;
+
 use crate::utils::format::i2osp;
 use crate::utils::scalar::hash_to_scalar;
+
 use bls12_381::{G2Affine, Scalar};
+
+// TODO: name of inner unwrapped values
 
 /// Generate a secret key deterministically from the given material and info.
 ///

@@ -1,10 +1,14 @@
-use crate::proof::{PreProof, Proof};
+use super::{PreProof, Proof};
+
 use crate::signature::Signature;
+
 use crate::suite::cipher::Cipher;
 use crate::suite::constants::PADDING_HASH_TO_SCALAR;
+
 use crate::utils::format::i2osp;
 use crate::utils::scalar::{calculate_domain, hash_to_scalar};
 use crate::utils::serialize::Serialize;
+
 use bls12_381::{G1Affine, G1Projective, Scalar};
 
 /// Initialize the proof and return one of the inputs passed to the challenge calculation operation. The input `message`

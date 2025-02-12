@@ -2,8 +2,10 @@ use crate::suite::cipher::Cipher;
 use crate::suite::constants::{
     LENGTH_MESSAGE_EXPAND, PADDING_HASH_TO_SCALAR, PADDING_MAP_TO_SCALAR,
 };
-use crate::utils::format::i2osp;
-use crate::utils::serialize::Serialize;
+
+use super::format::i2osp;
+use super::serialize::Serialize;
+
 use bls12_381::hash_to_curve::HashToField;
 use bls12_381::{G1Affine, Scalar};
 use digest::consts::U48;

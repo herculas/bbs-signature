@@ -1,10 +1,87 @@
-use crate::blind::{commitment_with_proof_to_octets, CommitmentProof};
-use crate::signature::Signature;
+use super::{CommitmentProof, Signature};
+
 use crate::suite::cipher::Cipher;
+use crate::suite::constants::{LENGTH_G1_POINT, LENGTH_SCALAR};
+
 use crate::utils::blind::calculate_blind_challenge;
 use crate::utils::scalar::{calculate_domain, hash_to_scalar, random_scalars};
-use crate::utils::serialize::Serialize;
+use crate::utils::serialize::{Deserialize, Serialize};
+
 use bls12_381::{G1Affine, G1Projective, Scalar};
+
+/// Serialize a commitment along with the proof-of-correctness of it.
+///
+/// - `commitment`: a point of G1 group.
+/// - `proof`: a commitment proof, containing a scalar, a vector of scalars, and another scalar, in thar order.
+///
+/// Return an octet string representing the serialized commitment and proof.
+pub(super) fn commitment_with_proof_to_octets(
+    commitment: &G1Affine,
+    proof: &CommitmentProof,
+) -> Vec<u8> {
+    // Procedure:
+    //
+    // 1. commitment_octets := serialize(commitment).
+    // 2. If commitment_octets is INVALID, return INVALID.
+    // 3. proof_octets := serialize(proof).
+    // 4. If proof_octets is INVALID, return INVALID.
+    // 5. Return commitment_octets || proof_octets.
+
+    let mut serialized = Vec::new();
+    serialized.extend_from_slice(&commitment.serialize());
+    serialized.extend_from_slice(&proof.serialize());
+    serialized
+}
+
+/// Deserialize an octet string to a commitment along with the proof-of-correctness of it.
+///
+/// - `commitment_with_proof_octets`: an octet string representing the serialized commitment and proof.
+///
+/// Return a tuple of a commitment and a commitment proof, where the commitment is a point in G1 group, and the proof
+/// is a commitment proof, containing a scalar, a vector of scalars, and another scalar, in thar order.
+pub(crate) fn octets_to_commitment_with_proof(
+    commitment_octets: &[u8],
+) -> (G1Affine, CommitmentProof) {
+    // Procedure:
+    //
+    // 1. commit_len_floor := octet_point_length + 2 * octet_scalar_length.
+    // 2. If len(commitment_octets) < commit_len_floor, return INVALID.
+    // 3. c_octets := commitment_octets[0..(octet_point_length - 1)].
+    // 4. c := octets_to_point_g1(c_octets).
+    // 5. If c is INVALID, return INVALID.
+    // 6. If c == Identity_G1, return INVALID.
+    //
+    // 7. j := 0.
+    // 8. index := octet_point_length.
+    // 9. While index < len(commitment_octets):
+    // 10.      end_index := index + octet_scalar_length - 1.
+    // 11.      s_j := OS2IP(commitment_octets[index..end_index]).
+    // 12.      If s_j == 0 or s_j >= r, return INVALID.
+    // 13.      index += octet_scalar_length.
+    // 14.      j += 1.
+    //
+    // 15. If index != len(commitment_octets), return INVALID.
+    // 16. If j < 2, return INVALID.
+    // 17. msg_commitment := [].
+    // 18. If j >= 3, set msg_commitment := (s_2, s_3, ..., s_{j-1}).
+    // 19. Return (c, (s_0, msg_commitment, s_j)).
+
+    let commit_len_floor = LENGTH_G1_POINT + 2 * LENGTH_SCALAR;
+    if commitment_octets.len() < commit_len_floor {
+        panic!("The length of commitment octets is less than the floor length.");
+    }
+
+    let c_octets = &commitment_octets[..LENGTH_G1_POINT];
+    let c = G1Affine::deserialize(c_octets);
+    if c == G1Affine::identity() {
+        panic!("The commitment is the identity element of G1 group.");
+    }
+
+    let proof_octets = &commitment_octets[LENGTH_G1_POINT..];
+    let proof = CommitmentProof::deserialize(proof_octets);
+
+    (c, proof)
+}
 
 /// Commit to the proof of knowledge of a signature.
 ///
@@ -182,7 +259,6 @@ pub(super) fn finalize_blind_sign(
         panic!("The number of generators must be greater than zero.");
     }
     let q_1 = generators[0];
-    let q_2 = inner_blind_generators[0];
     let h_points = &generators[1..];
     let j_points = &inner_blind_generators[1..];
 
@@ -218,4 +294,58 @@ pub(super) fn finalize_blind_sign(
 
     let a: G1Affine = (b * (secret_key + e).invert().unwrap()).into();
     Signature { a, e }
+}
+
+/// Validate an optional commitment. If a commitment is not supplied, or if it is the Identity_G1 point, this operation
+/// will return the Identity_G1 as the default commitment point, which will be ignored by all computations during blind
+/// signing.
+///
+/// - `commitment_with_proof`: an octet string representing the commitment and its proof of correctness.
+/// - `blind_generators`: a list of points from the G1 group.
+/// - `api_id`: an octet string representing the API identifier.
+/// - `cipher`: a cipher suite.
+///
+/// Return a point from the G1 group as the commitment.
+pub(super) fn deserialize_and_validate_commit(
+    commitment_with_proof: Option<&[u8]>,
+    blind_generators: Option<&Vec<G1Affine>>,
+    api_id: Option<&[u8]>,
+    cipher: &Cipher,
+) -> G1Affine {
+    if commitment_with_proof.is_none() || commitment_with_proof.unwrap().is_empty() {
+        return G1Affine::identity();
+    };
+
+    let blind_generators_empty_vec = vec![];
+    let inner_commitment_with_proof = commitment_with_proof.unwrap();
+    let inner_blind_generators = blind_generators.unwrap_or(&blind_generators_empty_vec);
+
+    // Procedure:
+    //
+    // 1. If commitment_with_proof is the empty string, return Identity_G1.
+    // 2. com_res := octets_to_commitment_with_proof(commitment_with_proof).
+    // 3. If com_res is INVALID, return INVALID.
+    // 4. (commit, commit_proof) := com_res.
+    // 5. If len(commit_proof[1]) + 1 != len(blind_generators), return INVALID.
+    // 6. validation_res := core_commit_verify(commit, commit_proof, blind_generators, api_id).
+    // 7. If validation_res is INVALID, return INVALID.
+    // 8. Return commit.
+
+    let (commit, commit_proof) = octets_to_commitment_with_proof(&inner_commitment_with_proof);
+
+    if commit_proof.m_hats.len() + 1 != inner_blind_generators.len() {
+        return G1Affine::identity();
+    };
+
+    let validation_res = commit_verify(
+        &commit,
+        &commit_proof,
+        inner_blind_generators,
+        api_id,
+        cipher,
+    );
+    if validation_res == false {
+        panic!("The commitment is invalid.");
+    }
+    commit
 }

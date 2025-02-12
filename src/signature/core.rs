@@ -1,7 +1,10 @@
-use crate::signature::Signature;
+use super::Signature;
+
 use crate::suite::cipher::Cipher;
+
 use crate::utils::scalar::{calculate_domain, hash_to_scalar};
 use crate::utils::serialize::{Deserialize, Serialize};
+
 use bls12_381::{G1Affine, G1Projective, G2Affine, G2Prepared, Gt, Scalar};
 
 /// Compute a deterministic signature from a secret key, a set of messages, and optionally a header and a vector of
@@ -103,7 +106,7 @@ pub(super) fn sign(
 /// - `cipher`: a cipher suite.
 ///
 /// Return `true` if the signature is valid, `false` otherwise.
-pub(crate) fn verify(
+pub(super) fn verify(
     public_key: &[u8],
     signature: &Signature,
     generators: &Vec<G1Affine>,
@@ -174,3 +177,5 @@ pub(crate) fn verify(
         &Gt::identity(),
     )
 }
+
+

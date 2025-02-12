@@ -1,11 +1,15 @@
-use crate::proof::subroutine::{
+use super::subroutine::{
     calculate_challenge, finalize_proof, initialize_proof, prepare_verification,
 };
-use crate::proof::Proof;
+use super::Proof;
+
 use crate::signature::Signature;
+
 use crate::suite::cipher::Cipher;
+
 use crate::utils::scalar::random_scalars;
 use crate::utils::serialize::Deserialize;
+
 use bls12_381::{G1Affine, G2Affine, G2Prepared, Gt, Scalar};
 
 /// Compute a zero-knowledge proof-of-knowledge of a signature, while optionally selectively disclosing from the origin
@@ -26,7 +30,7 @@ use bls12_381::{G1Affine, G2Affine, G2Prepared, Gt, Scalar};
 /// - `cipher`: a cipher suite.
 ///
 /// Return a proof.
-pub(crate) fn prove(
+pub(super) fn prove(
     public_key: &[u8],
     signature: &Signature,
     generators: &Vec<G1Affine>,
@@ -155,7 +159,7 @@ pub(crate) fn prove(
 /// - `cipher`: a cipher suite.
 ///
 /// Return `true` if the proof is valid, `false` otherwise.
-pub(crate) fn verify(
+pub(super) fn verify(
     public_key: &[u8],
     proof: &Proof,
     generators: &Vec<G1Affine>,

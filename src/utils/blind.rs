@@ -1,8 +1,10 @@
 use crate::suite::cipher::Cipher;
 use crate::suite::constants::{PADDING_BLIND, PADDING_HASH_TO_SCALAR};
-use crate::utils::generator::create_generators;
-use crate::utils::scalar::{hash_to_scalar, messages_to_scalars};
-use crate::utils::serialize::Serialize;
+
+use super::generator::create_generators;
+use super::scalar::{hash_to_scalar, messages_to_scalars};
+use super::serialize::Serialize;
+
 use bls12_381::{G1Affine, G1Projective, Scalar};
 
 /// Prepare the parameters for the proof of knowledge of a signature.

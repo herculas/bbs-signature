@@ -1,7 +1,9 @@
 use crate::suite::cipher::Cipher;
 use crate::suite::constants::{LENGTH_G1_POINT, LENGTH_G2_POINT, LENGTH_SCALAR};
 use crate::suite::instance::{BLS12_381_G1_XMD_SHA_256, BLS12_381_G1_XOF_SHAKE_256};
-use crate::utils::format::{bytes_to_hex, hex_to_bytes, i2osp, os2ip};
+
+use super::format::{bytes_to_hex, hex_to_bytes, i2osp, os2ip};
+
 use bls12_381::{G1Affine, G2Affine, Scalar};
 use js_sys::{try_iter, Array};
 use wasm_bindgen::JsValue;

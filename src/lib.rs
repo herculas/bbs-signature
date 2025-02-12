@@ -12,7 +12,6 @@ mod proof;
 mod signature;
 mod suite;
 mod utils;
-mod blind;
 
 #[wasm_bindgen]
 pub fn generate_secret_key(
@@ -166,7 +165,7 @@ pub fn validate(
         None
     };
 
-    JsValue::from_bool(proof::interface::verify(
+    JsValue::from_bool(proof::interface::validate(
         &public_key,
         &proof,
         header.as_deref(),

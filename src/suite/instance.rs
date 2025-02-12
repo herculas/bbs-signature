@@ -1,5 +1,6 @@
-use crate::suite::cipher::Cipher;
-use crate::suite::constants::LENGTH_MESSAGE_EXPAND;
+use super::cipher::Cipher;
+use super::constants::LENGTH_MESSAGE_EXPAND;
+
 use bls12_381::hash_to_curve::{
     ExpandMessageState, ExpandMsgXmd, ExpandMsgXof, HashToCurve, InitExpandMessage,
 };
@@ -25,8 +26,12 @@ pub const BLS12_381_G1_XOF_SHAKE_256: Cipher = Cipher {
         if dst.len() > 255 {
             panic!("dst length must be less than 255");
         }
-        ExpandMsgXof::<Shake256>::init_expand(message, dst, expand_length.unwrap_or(LENGTH_MESSAGE_EXPAND))
-            .into_vec()
+        ExpandMsgXof::<Shake256>::init_expand(
+            message,
+            dst,
+            expand_length.unwrap_or(LENGTH_MESSAGE_EXPAND),
+        )
+        .into_vec()
     },
     pairing_compare: |terms: &[(&G1Affine, &G2Prepared)], result: &Gt| {
         multi_miller_loop(terms).final_exponentiation() == *result
@@ -51,8 +56,12 @@ pub const BLS12_381_G1_XMD_SHA_256: Cipher = Cipher {
         if dst.len() > 255 {
             panic!("dst length must be less than 255");
         }
-        ExpandMsgXmd::<Sha256>::init_expand(message, dst, expand_length.unwrap_or(LENGTH_MESSAGE_EXPAND))
-            .into_vec()
+        ExpandMsgXmd::<Sha256>::init_expand(
+            message,
+            dst,
+            expand_length.unwrap_or(LENGTH_MESSAGE_EXPAND),
+        )
+        .into_vec()
     },
     pairing_compare: |terms: &[(&G1Affine, &G2Prepared)], result: &Gt| {
         multi_miller_loop(terms).final_exponentiation() == *result

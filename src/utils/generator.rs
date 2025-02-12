@@ -2,7 +2,9 @@ use crate::suite::cipher::Cipher;
 use crate::suite::constants::{
     PADDING_MSG_GENERATOR_SEED, PADDING_SIG_GENERATOR_DST, PADDING_SIG_GENERATOR_SEED,
 };
-use crate::utils::format::{concat_bytes, i2osp};
+
+use super::format::{concat_bytes, i2osp};
+
 use bls12_381::G1Affine;
 
 /// Create a set of randomly sampled points from the G1 group, called the generators.
