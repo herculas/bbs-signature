@@ -16,15 +16,6 @@ pub(crate) struct Signature {
     pub(crate) e: Scalar,
 }
 
-/// A zero-knowledge proof-of-correctness of a commitment, consisting of a scalar value, a possibly empty set of scalars
-/// (of length equal to the number of committed messages), and another scalar, in that order.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct CommitmentProof {
-    s_hat: Scalar,
-    m_hats: Vec<Scalar>,
-    challenge: Scalar,
-}
-
 impl Serialize for Signature {
     fn serialize(&self) -> Vec<u8> {
         let mut serialized = Vec::new();
@@ -40,6 +31,27 @@ impl Deserialize for Signature {
         let e = Scalar::deserialize(&bytes[LENGTH_G1_POINT..]);
         Signature { a, e }
     }
+}
+
+impl Export for Signature {
+    fn export(&self) -> JsValue {
+        JsValue::from_str(&bytes_to_hex(&self.serialize()))
+    }
+}
+
+impl Import for Signature {
+    fn import(source: &JsValue) -> Self {
+        Signature::deserialize(&hex_to_bytes(&source.as_string().unwrap()))
+    }
+}
+
+/// A zero-knowledge proof-of-correctness of a commitment, consisting of a scalar value, a possibly empty set of scalars
+/// (of length equal to the number of committed messages), and another scalar, in that order.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct CommitmentProof {
+    s_hat: Scalar,
+    m_hats: Vec<Scalar>,
+    challenge: Scalar,
 }
 
 impl Serialize for CommitmentProof {
@@ -71,18 +83,6 @@ impl Deserialize for CommitmentProof {
             m_hats,
             challenge,
         }
-    }
-}
-
-impl Export for Signature {
-    fn export(&self) -> JsValue {
-        JsValue::from_str(&bytes_to_hex(&self.serialize()))
-    }
-}
-
-impl Import for Signature {
-    fn import(source: &JsValue) -> Self {
-        Signature::deserialize(&hex_to_bytes(&source.as_string().unwrap()))
     }
 }
 
