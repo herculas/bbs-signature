@@ -15,7 +15,7 @@ use bls12_381::G1Affine;
 /// - `cipher`: the cipher suite.
 ///
 /// Return a vector of `G1Affine` points.
-pub fn create_generator(count: usize, api_id: Option<&[u8]>, cipher: &Cipher) -> Vec<G1Affine> {
+pub fn create_generators(count: usize, api_id: Option<&[u8]>, cipher: &Cipher) -> Vec<G1Affine> {
     let seed_dst = concat_bytes(&[api_id.unwrap_or(&[]), PADDING_SIG_GENERATOR_SEED]);
     let generator_dst = concat_bytes(&[api_id.unwrap_or(&[]), PADDING_SIG_GENERATOR_DST]);
     let generator_seed = concat_bytes(&[api_id.unwrap_or(&[]), PADDING_MSG_GENERATOR_SEED]);
@@ -42,7 +42,7 @@ mod tests {
     fn shake_256_message_generators() {
         let cipher = BLS12_381_G1_XOF_SHAKE_256;
         let api_id = concat_bytes(&[cipher.id, PADDING_API_ID]);
-        let generators = create_generator(11, Some(&api_id), &cipher);
+        let generators = create_generators(11, Some(&api_id), &cipher);
 
         let q_1 = bytes_to_hex(&generators[0].to_compressed());
         let h_1 = bytes_to_hex(&generators[1].to_compressed());
@@ -128,7 +128,7 @@ mod tests {
     fn sha_256_message_generators() {
         let cipher = BLS12_381_G1_XMD_SHA_256;
         let api_id = concat_bytes(&[cipher.id, PADDING_API_ID]);
-        let generators = create_generator(11, Some(&api_id), &cipher);
+        let generators = create_generators(11, Some(&api_id), &cipher);
 
         let q_1 = bytes_to_hex(&generators[0].to_compressed());
         let h_1 = bytes_to_hex(&generators[1].to_compressed());

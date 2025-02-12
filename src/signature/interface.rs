@@ -1,8 +1,8 @@
 use crate::signature::Signature;
 use crate::suite::cipher::Cipher;
 use crate::suite::constants::PADDING_API_ID;
-use crate::utils::generator::create_generator;
-use crate::utils::scalar::message_to_scalars;
+use crate::utils::generator::create_generators;
+use crate::utils::scalar::messages_to_scalars;
 use bls12_381::Scalar;
 
 /// Generate a BBS Signature from a secret key, over a header and a set of messages.
@@ -30,7 +30,7 @@ pub fn sign(
 
     // Procedure:
     //
-    // 1. message_scalars := message_to_scalars(messages, api_id).
+    // 1. message_scalars := messages_to_scalars(messages, api_id).
     // 2. generators := create_generators(len(messages) + 1, api_id).
     // 3. signature := core_sign(
     //          secret_key,
@@ -42,8 +42,8 @@ pub fn sign(
     //          cipher).
     // 4. If signature is INVALID, return INVALID.
     // 5. Return signature.
-    let message_scalars = message_to_scalars(inner_messages, Some(&api_id), &cipher);
-    let generators = create_generator(inner_messages.len() + 1, Some(&api_id), &cipher);
+    let message_scalars = messages_to_scalars(inner_messages, Some(&api_id), &cipher);
+    let generators = create_generators(inner_messages.len() + 1, Some(&api_id), &cipher);
     super::core::sign(
         &secret_key,
         &public_key,
@@ -80,7 +80,7 @@ pub fn verify(
 
     // Procedure:
     //
-    // 1. message_scalars := message_to_scalars(messages, api_id).
+    // 1. message_scalars := messages_to_scalars(messages, api_id).
     // 2. generators := create_generators(len(messages) + 1, api_id).
     // 3. result := core_verify(
     //          public_key,
@@ -91,8 +91,8 @@ pub fn verify(
     //          api_id,
     //          cipher).
     // 4. Return result.
-    let message_scalars = message_to_scalars(inner_messages, Some(&api_id), &cipher);
-    let generators = create_generator(inner_messages.len() + 1, Some(&api_id), &cipher);
+    let message_scalars = messages_to_scalars(inner_messages, Some(&api_id), &cipher);
+    let generators = create_generators(inner_messages.len() + 1, Some(&api_id), &cipher);
     super::core::verify(
         &public_key,
         &signature,
@@ -110,7 +110,7 @@ mod tests {
     use crate::signature::Signature;
     use crate::suite::instance::{BLS12_381_G1_XMD_SHA_256, BLS12_381_G1_XOF_SHAKE_256};
     use crate::utils::format::{bytes_to_hex, hex_to_bytes};
-    use crate::utils::generator::create_generator;
+    use crate::utils::generator::create_generators;
     use crate::utils::scalar::calculate_domain;
     use crate::utils::serialize::{Deserialize, Serialize};
     use bls12_381::Scalar;
@@ -131,7 +131,7 @@ mod tests {
 
         let cipher = BLS12_381_G1_XOF_SHAKE_256;
         let api_id = [cipher.id, PADDING_API_ID].concat();
-        let generators = create_generator(2, Some(&api_id), &cipher);
+        let generators = create_generators(2, Some(&api_id), &cipher);
 
         let domain = calculate_domain(
             &public_key_bytes,
@@ -199,7 +199,7 @@ mod tests {
 
         let cipher = BLS12_381_G1_XOF_SHAKE_256;
         let api_id = [cipher.id, PADDING_API_ID].concat();
-        let generators = create_generator(11, Some(&api_id), &cipher);
+        let generators = create_generators(11, Some(&api_id), &cipher);
 
         let domain = calculate_domain(
             &public_key_bytes,
@@ -277,7 +277,7 @@ mod tests {
 
         let cipher = BLS12_381_G1_XOF_SHAKE_256;
         let api_id = [cipher.id, PADDING_API_ID].concat();
-        let generators = create_generator(11, Some(&api_id), &cipher);
+        let generators = create_generators(11, Some(&api_id), &cipher);
 
         let domain = calculate_domain(
             &public_key_bytes,
@@ -609,7 +609,7 @@ mod tests {
 
         let cipher = BLS12_381_G1_XMD_SHA_256;
         let api_id = [cipher.id, PADDING_API_ID].concat();
-        let generators = create_generator(2, Some(&api_id), &cipher);
+        let generators = create_generators(2, Some(&api_id), &cipher);
 
         let domain = calculate_domain(
             &public_key_bytes,
@@ -677,7 +677,7 @@ mod tests {
 
         let cipher = BLS12_381_G1_XMD_SHA_256;
         let api_id = [cipher.id, PADDING_API_ID].concat();
-        let generators = create_generator(11, Some(&api_id), &cipher);
+        let generators = create_generators(11, Some(&api_id), &cipher);
 
         let domain = calculate_domain(
             &public_key_bytes,
@@ -755,7 +755,7 @@ mod tests {
 
         let cipher = BLS12_381_G1_XMD_SHA_256;
         let api_id = [cipher.id, PADDING_API_ID].concat();
-        let generators = create_generator(11, Some(&api_id), &cipher);
+        let generators = create_generators(11, Some(&api_id), &cipher);
 
         let domain = calculate_domain(
             &public_key_bytes,

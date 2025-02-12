@@ -2,6 +2,7 @@ use bls12_381::Scalar;
 
 mod core;
 pub(crate) mod interface;
+mod commitment;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct CommittedProof {

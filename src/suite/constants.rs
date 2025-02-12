@@ -13,6 +13,7 @@ pub const LENGTH_G2_POINT: usize = 96;
 pub const LENGTH_MESSAGE_EXPAND: usize = 48;
 
 pub const PADDING_API_ID: &[u8] = b"H2G_HM2S_";
+pub const PADDING_BLIND: &[u8] = b"BLIND_";
 
 pub const PADDING_SIG_GENERATOR_SEED: &[u8] = b"SIG_GENERATOR_SEED_";
 pub const PADDING_MSG_GENERATOR_SEED: &[u8] = b"MESSAGE_GENERATOR_SEED";

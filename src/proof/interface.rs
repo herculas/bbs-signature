@@ -2,8 +2,8 @@ use crate::proof::Proof;
 use crate::signature::Signature;
 use crate::suite::cipher::Cipher;
 use crate::suite::constants::PADDING_API_ID;
-use crate::utils::generator::create_generator;
-use crate::utils::scalar::message_to_scalars;
+use crate::utils::generator::create_generators;
+use crate::utils::scalar::messages_to_scalars;
 
 /// Create a BBS proof, which is a zero-knowledge proof-of-knowledge of a BBS Signature, while optionally disclosing any
 /// subset of the signed messages.
@@ -41,7 +41,7 @@ pub fn prove(
 
     // Procedure:
     //
-    // 1. message_scalars := message_to_scalars(messages, api_id).
+    // 1. message_scalars := messages_to_scalars(messages, api_id).
     // 2. generators := create_generators(len(messages) + 1, api_id).
     // 3. proof := core_prove(
     //          public_key,
@@ -55,8 +55,8 @@ pub fn prove(
     //          cipher).
     // 4. If proof is INVALID, return INVALID.
     // 5. Return proof.
-    let message_scalars = message_to_scalars(inner_messages, Some(&api_id), cipher);
-    let generators = create_generator(inner_messages.len() + 1, Some(&api_id), cipher);
+    let message_scalars = messages_to_scalars(inner_messages, Some(&api_id), cipher);
+    let generators = create_generators(inner_messages.len() + 1, Some(&api_id), cipher);
     super::core::prove(
         public_key,
         signature,
@@ -115,7 +115,7 @@ pub fn verify(
 
     // Procedure:
     //
-    // 1. message_scalars := message_to_scalars(disclosed_messages, api_id).
+    // 1. message_scalars := messages_to_scalars(disclosed_messages, api_id).
     // 2. generators := create_generators(U + R + 1, api_id).
     // 3. result := core_verify(
     //          public_key,
@@ -128,8 +128,8 @@ pub fn verify(
     //          api_id,
     //          cipher).
     // 4. Return result.
-    let message_scalars = message_to_scalars(inner_disclosed_messages, Some(&api_id), cipher);
-    let generators = create_generator(u + r + 1, Some(&api_id), cipher);
+    let message_scalars = messages_to_scalars(inner_disclosed_messages, Some(&api_id), cipher);
+    let generators = create_generators(u + r + 1, Some(&api_id), cipher);
     super::core::verify(
         public_key,
         proof,
@@ -193,8 +193,8 @@ mod tests {
         let e = signature.e;
 
         let api_id = [cipher.id, PADDING_API_ID].concat();
-        let generators = create_generator(2, Some(&api_id), &cipher);
-        let message_scalars = message_to_scalars(&vec![&msg_bytes], Some(&api_id), &cipher);
+        let generators = create_generators(2, Some(&api_id), &cipher);
+        let message_scalars = messages_to_scalars(&vec![&msg_bytes], Some(&api_id), &cipher);
         let random_scalars = vec![r_1, r_2, e_tilde, r_1_tilde, r_3_tilde];
 
         let disclosed_indexes = vec![0];
@@ -337,8 +337,8 @@ mod tests {
 
         let api_id = [cipher.id, PADDING_API_ID].concat();
         let random_scalars = vec![r_1, r_2, e_tilde, r_1_tilde, r_3_tilde];
-        let generators = create_generator(11, Some(&api_id), &cipher);
-        let message_scalars = message_to_scalars(
+        let generators = create_generators(11, Some(&api_id), &cipher);
+        let message_scalars = messages_to_scalars(
             &vec![
                 &msg_1, &msg_2, &msg_3, &msg_4, &msg_5, &msg_6, &msg_7, &msg_8, &msg_9, &msg_10,
             ],
@@ -508,8 +508,8 @@ mod tests {
             .map(|s| *s)
             .collect::<Vec<_>>();
 
-        let generators = create_generator(11, Some(&api_id), &cipher);
-        let message_scalars = message_to_scalars(
+        let generators = create_generators(11, Some(&api_id), &cipher);
+        let message_scalars = messages_to_scalars(
             &vec![
                 &msg_1, &msg_2, &msg_3, &msg_4, &msg_5, &msg_6, &msg_7, &msg_8, &msg_9, &msg_10,
             ],
@@ -682,8 +682,8 @@ mod tests {
             .map(|s| *s)
             .collect::<Vec<_>>();
 
-        let generators = create_generator(11, Some(&api_id), &cipher);
-        let message_scalars = message_to_scalars(
+        let generators = create_generators(11, Some(&api_id), &cipher);
+        let message_scalars = messages_to_scalars(
             &vec![
                 &msg_1, &msg_2, &msg_3, &msg_4, &msg_5, &msg_6, &msg_7, &msg_8, &msg_9, &msg_10,
             ],
@@ -855,8 +855,8 @@ mod tests {
             .map(|s| *s)
             .collect::<Vec<_>>();
 
-        let generators = create_generator(11, Some(&api_id), &cipher);
-        let message_scalars = message_to_scalars(
+        let generators = create_generators(11, Some(&api_id), &cipher);
+        let message_scalars = messages_to_scalars(
             &vec![
                 &msg_1, &msg_2, &msg_3, &msg_4, &msg_5, &msg_6, &msg_7, &msg_8, &msg_9, &msg_10,
             ],
@@ -992,8 +992,8 @@ mod tests {
         let e = signature.e;
 
         let api_id = [cipher.id, PADDING_API_ID].concat();
-        let generators = create_generator(2, Some(&api_id), &cipher);
-        let message_scalars = message_to_scalars(&vec![&msg_bytes], Some(&api_id), &cipher);
+        let generators = create_generators(2, Some(&api_id), &cipher);
+        let message_scalars = messages_to_scalars(&vec![&msg_bytes], Some(&api_id), &cipher);
         let random_scalars = vec![r_1, r_2, e_tilde, r_1_tilde, r_3_tilde];
 
         let disclosed_indexes = vec![0];
@@ -1132,8 +1132,8 @@ mod tests {
 
         let api_id = [cipher.id, PADDING_API_ID].concat();
         let random_scalars = vec![r_1, r_2, e_tilde, r_1_tilde, r_3_tilde];
-        let generators = create_generator(11, Some(&api_id), &cipher);
-        let message_scalars = message_to_scalars(
+        let generators = create_generators(11, Some(&api_id), &cipher);
+        let message_scalars = messages_to_scalars(
             &vec![
                 &msg_1, &msg_2, &msg_3, &msg_4, &msg_5, &msg_6, &msg_7, &msg_8, &msg_9, &msg_10,
             ],
@@ -1303,8 +1303,8 @@ mod tests {
             .map(|s| *s)
             .collect::<Vec<_>>();
 
-        let generators = create_generator(11, Some(&api_id), &cipher);
-        let message_scalars = message_to_scalars(
+        let generators = create_generators(11, Some(&api_id), &cipher);
+        let message_scalars = messages_to_scalars(
             &vec![
                 &msg_1, &msg_2, &msg_3, &msg_4, &msg_5, &msg_6, &msg_7, &msg_8, &msg_9, &msg_10,
             ],
@@ -1477,8 +1477,8 @@ mod tests {
             .map(|s| *s)
             .collect::<Vec<_>>();
 
-        let generators = create_generator(11, Some(&api_id), &cipher);
-        let message_scalars = message_to_scalars(
+        let generators = create_generators(11, Some(&api_id), &cipher);
+        let message_scalars = messages_to_scalars(
             &vec![
                 &msg_1, &msg_2, &msg_3, &msg_4, &msg_5, &msg_6, &msg_7, &msg_8, &msg_9, &msg_10,
             ],
@@ -1642,8 +1642,8 @@ mod tests {
             .map(|s| *s)
             .collect::<Vec<_>>();
 
-        let generators = create_generator(11, Some(&api_id), &cipher);
-        let message_scalars = message_to_scalars(
+        let generators = create_generators(11, Some(&api_id), &cipher);
+        let message_scalars = messages_to_scalars(
             &vec![
                 &msg_1, &msg_2, &msg_3, &msg_4, &msg_5, &msg_6, &msg_7, &msg_8, &msg_9, &msg_10,
             ],

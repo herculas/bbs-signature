@@ -44,7 +44,7 @@ pub fn hash_to_scalar(msg: &[u8], dst: &[u8], cipher: &Cipher) -> Scalar {
 /// - `cipher`: the cipher suite.
 ///
 /// Return a list of `Scalar` values.
-pub fn message_to_scalars(
+pub fn messages_to_scalars(
     messages: &Vec<&[u8]>,
     api_id: Option<&[u8]>,
     cipher: &Cipher,
@@ -237,7 +237,7 @@ mod tests {
     use crate::suite::constants::{PADDING_API_ID, PADDING_SEED_RANDOM_SCALAR};
     use crate::suite::instance::{BLS12_381_G1_XMD_SHA_256, BLS12_381_G1_XOF_SHAKE_256};
     use crate::utils::format::hex_to_bytes;
-    use crate::utils::generator::create_generator;
+    use crate::utils::generator::create_generators;
 
     #[test]
     fn shake_256_messages_to_scalars() {
@@ -261,7 +261,7 @@ mod tests {
             msg_1, msg_2, msg_3, msg_4, msg_5, msg_6, msg_7, msg_8, msg_9, msg_10,
         ];
         let messages: Vec<&[u8]> = messages.iter().map(|v| v.as_slice()).collect();
-        let scalars = message_to_scalars(&messages, Some(&api_id), &cipher);
+        let scalars = messages_to_scalars(&messages, Some(&api_id), &cipher);
 
         assert_eq!(
             scalars[0].to_string(),
@@ -327,7 +327,7 @@ mod tests {
             msg_1, msg_2, msg_3, msg_4, msg_5, msg_6, msg_7, msg_8, msg_9, msg_10,
         ];
         let messages: Vec<&[u8]> = messages.iter().map(|v| v.as_slice()).collect();
-        let scalars = message_to_scalars(&messages, Some(&api_id), &cipher);
+        let scalars = messages_to_scalars(&messages, Some(&api_id), &cipher);
 
         assert_eq!(
             scalars[0].to_string(),
@@ -483,7 +483,7 @@ mod tests {
             eb001963bc3decaae0d9f702c7a8c004f207f46c734a5eae2e8e82833f3e7ea5",
         );
         let api_id = [cipher.id, PADDING_API_ID].concat();
-        let generators = create_generator(2, Some(&api_id), &cipher);
+        let generators = create_generators(2, Some(&api_id), &cipher);
         let header = hex_to_bytes("11223344556677889900aabbccddeeff");
         let domain = calculate_domain(
             &public_key,
@@ -509,7 +509,7 @@ mod tests {
             1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c",
         );
         let api_id = [cipher.id, PADDING_API_ID].concat();
-        let generators = create_generator(2, Some(&api_id), &cipher);
+        let generators = create_generators(2, Some(&api_id), &cipher);
         let header = hex_to_bytes("11223344556677889900aabbccddeeff");
         let domain = calculate_domain(
             &public_key,
