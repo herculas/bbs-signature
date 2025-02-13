@@ -340,6 +340,7 @@ pub fn blind_validate(
     // - octet_point_length: the length of the octet string representation of a G1 point.
     // - octet_scalar_length: the length of the octet string representation of a scalar.
 
+    // TODO: this is a bug in the spec, the api_id should be BLIND_H2G_HM2S_ instead of H2G_HM2S_
     let api_id = [cipher.id, PADDING_BLIND, PADDING_API_ID].concat();
 
     // Deserialization:

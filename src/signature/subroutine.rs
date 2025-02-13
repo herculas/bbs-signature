@@ -4,7 +4,9 @@ use crate::suite::cipher::Cipher;
 use crate::suite::constants::{LENGTH_G1_POINT, LENGTH_SCALAR};
 
 use crate::utils::blind::calculate_blind_challenge;
-use crate::utils::scalar::{calculate_domain, hash_to_scalar, random_scalars};
+use crate::utils::scalar::{
+    calculate_domain, hash_to_scalar, random_scalars, seeded_random_scalars,
+};
 use crate::utils::serialize::{Deserialize, Serialize};
 
 use bls12_381::{G1Affine, G1Projective, Scalar};
@@ -159,6 +161,60 @@ pub(super) fn commit(
     (commit_with_proof, secret_prover_blind)
 }
 
+#[allow(dead_code)]
+pub(super) fn mock_commit(
+    blind_generators: &Vec<G1Affine>,
+    committed_messages: Option<&Vec<Scalar>>,
+    api_id: Option<&[u8]>,
+    cipher: &Cipher,
+    seed: &[u8],
+    mock_dst: &[u8],
+) -> (Vec<u8>, Scalar) {
+    let default_committed_messages = vec![];
+    let committed_messages = committed_messages.unwrap_or(&default_committed_messages);
+
+    let m = committed_messages.len();
+    if blind_generators.len() != m + 1 {
+        panic!("The length of the blind generators must be equal to the length of the committed messages plus one.");
+    }
+    let q_2 = blind_generators[0];
+    let j_points = &blind_generators[1..];
+
+    let random_scalars = seeded_random_scalars(&seed, &mock_dst, m + 2, &cipher);
+    let secret_prover_blind = random_scalars[0];
+    let tilde_s = random_scalars[1];
+    let tilde_m_points = &random_scalars[2..];
+
+    let c: G1Projective = j_points.iter().zip(committed_messages.iter()).fold(
+        (q_2 * secret_prover_blind).into(),
+        |acc: G1Projective, (j, msg)| (acc + j * msg).into(),
+    );
+    let c_bar: G1Projective = j_points
+        .iter()
+        .zip(tilde_m_points.iter())
+        .fold((q_2 * tilde_s).into(), |acc: G1Projective, (j, tilde_m)| {
+            (acc + j * tilde_m).into()
+        });
+
+    let challenge =
+        calculate_blind_challenge(&c.into(), &c_bar.into(), &blind_generators, api_id, cipher);
+    let s_hat = tilde_s + secret_prover_blind * challenge;
+    let m_hats: Vec<Scalar> = tilde_m_points
+        .iter()
+        .zip(committed_messages.iter())
+        .map(|(tilde_m, msg)| tilde_m + msg * challenge)
+        .collect();
+
+    let proof = CommitmentProof {
+        s_hat,
+        m_hats,
+        challenge,
+    };
+
+    let commit_with_proof = commitment_with_proof_to_octets(&c.into(), &proof);
+    (commit_with_proof, secret_prover_blind)
+}
+
 /// Verify the correctness of a committed proof for a supplied commitment, over a list of points of G1 called the blind
 /// generators, used to compute that commitment.
 ///
@@ -259,9 +315,9 @@ pub(super) fn finalize_blind_sign(
 
     let l = generators.len() - 1;
     let m = blind_generators.len() - 1;
-    if l <= 0 || m <= 0 {
-        panic!("The number of generators must be greater than zero.");
-    }
+    // if l < 0 || m < 0 {
+    //     panic!("The number of generators must be greater than zero.");
+    // }
     let q_1 = generators[0];
     let h_points = &generators[1..];
     let j_points = &blind_generators[1..];
@@ -339,7 +395,7 @@ pub(super) fn deserialize_and_validate_commit(
     let (commit, commit_proof) = octets_to_commitment_with_proof(&commitment_with_proof);
 
     if commit_proof.m_hats.len() + 1 != blind_generators.len() {
-        return G1Affine::identity();
+        panic!("The length of the commitment proof must be equal to the length of the blind generators plus one.");
     };
 
     let validation_res = commit_verify(&commit, &commit_proof, blind_generators, api_id, cipher);

@@ -1,4 +1,6 @@
-use super::subroutine::{commit, deserialize_and_validate_commit, finalize_blind_sign};
+use super::subroutine::{
+    commit, deserialize_and_validate_commit, finalize_blind_sign, mock_commit,
+};
 use super::Signature;
 
 use crate::suite::cipher::Cipher;
@@ -130,7 +132,10 @@ pub fn blind_messages(
     cipher: &Cipher,
 ) -> (Vec<u8>, Scalar) {
     let default_committed_messages = vec![];
+    let default_api_id = vec![];
+
     let committed_messages = committed_messages.unwrap_or(&default_committed_messages);
+    let api_id = api_id.unwrap_or(&default_api_id);
 
     // Procedure:
     //
@@ -138,15 +143,41 @@ pub fn blind_messages(
     // 2. blind_generators := create_generators(len(committed_message_scalars) + 1, "BLIND_" || api_id).
     // 3. return core_commit(committed_message_scalars, blind_generators, api_id).
 
-    let committed_message_scalars = messages_to_scalars(committed_messages, api_id, cipher);
+    let committed_message_scalars = messages_to_scalars(committed_messages, Some(&api_id), cipher);
     let l = committed_message_scalars.len() + 1;
-    let blind_generator_dst = [PADDING_BLIND, api_id.unwrap_or(&[])].concat();
+    let blind_generator_dst = [PADDING_BLIND, api_id].concat();
     let blind_generators = create_generators(l, Some(&blind_generator_dst), cipher);
     commit(
         &blind_generators,
         Some(&committed_message_scalars),
-        api_id,
+        Some(&api_id),
         cipher,
+    )
+}
+
+#[allow(dead_code)]
+pub fn mock_blind_messages(
+    committed_messages: Option<&Vec<&[u8]>>,
+    api_id: Option<&[u8]>,
+    cipher: &Cipher,
+    seed: &[u8],
+    mock_dst: &[u8],
+) -> (Vec<u8>, Scalar) {
+    let default_committed_messages = vec![];
+    let default_api_id = vec![];
+    let committed_messages = committed_messages.unwrap_or(&default_committed_messages);
+    let api_id = api_id.unwrap_or(&default_api_id);
+    let committed_message_scalars = messages_to_scalars(committed_messages, Some(&api_id), cipher);
+    let l = committed_message_scalars.len() + 1;
+    let blind_generator_dst = [PADDING_BLIND, api_id].concat();
+    let blind_generators = create_generators(l, Some(&blind_generator_dst), cipher);
+    mock_commit(
+        &blind_generators,
+        Some(&committed_message_scalars),
+        Some(&api_id),
+        cipher,
+        seed,
+        mock_dst,
     )
 }
 
@@ -183,10 +214,10 @@ pub fn blind_sign(
 
     // Parameters:
     //
-    // - api_id: an octet string "<cipher_suite_id> || BLIND_H2G_HM2S_", where <cipher_suite_id> is defined by the
-    //      cipher suite and "BLIND_H2G_HM2S_" is an ASCII string composed of 15 bytes.
+    // - api_id: an octet string "<cipher_suite_id> || BLIND_H2G_HM2S_".
 
     let api_id = [cipher.id, PADDING_BLIND, PADDING_API_ID].concat();
+    let blind_api_id = [PADDING_BLIND, cipher.id, PADDING_BLIND, PADDING_API_ID].concat();
 
     // Deserialization:
     //
@@ -199,7 +230,7 @@ pub fn blind_sign(
     let l = messages.len();
     let mut m = commitment_with_proof.len();
     if m != 0 {
-        m -= LENGTH_G1_POINT - LENGTH_SCALAR;
+        m -= LENGTH_G1_POINT + 2 * LENGTH_SCALAR;
     }
     m /= LENGTH_SCALAR;
 
@@ -218,17 +249,19 @@ pub fn blind_sign(
     // 11. Return blind_sig.
 
     let generators = create_generators(l + 1, Some(&api_id), cipher);
-    let blind_api_id = [PADDING_BLIND, cipher.id, PADDING_BLIND, PADDING_API_ID].concat();
     let blind_generators = create_generators(m + 1, Some(&blind_api_id), cipher);
+
     let commit = deserialize_and_validate_commit(
         Some(&commitment_with_proof),
         Some(&blind_generators),
         Some(&api_id),
         cipher,
     );
+
     let message_scalars = messages_to_scalars(messages, Some(&api_id), cipher);
     let res = calculate_b(&generators, Some(&commit), Some(&message_scalars));
     let b: G1Affine = res.into();
+
     finalize_blind_sign(
         secret_key,
         public_key,
@@ -795,6 +828,132 @@ mod tests {
             &cipher,
         );
         assert!(!verification_result);
+    }
+
+    #[test]
+    fn shake_256_blind_commit_no_messages_with_proof() {
+        let cipher = BLS12_381_G1_XOF_SHAKE_256;
+        let api_id = [cipher.id, PADDING_BLIND, PADDING_API_ID].concat();
+
+        let committed_messages: Vec<&[u8]> = vec![];
+        let (commitment_with_proof, prover_blind) = mock_blind_messages(
+            Some(&committed_messages),
+            Some(&api_id),
+            &cipher,
+            b"3.141592653589793238462643383279",
+            b"BBS_BLS12381G1_XOF:SHAKE-256_SSWU_RO_H2G_HM2S_COMMIT_MOCK_RANDOM_SCALARS_DST_",
+        );
+
+        assert_eq!(
+            prover_blind.to_string(),
+            "0x30bd5c9bd2b61c44dd169c92cf28bb607830c56073f10e7a800c857cb05ec249"
+        );
+        assert_eq!(
+            bytes_to_hex(&commitment_with_proof),
+            "\
+                b6389b0fdf04b9c35165acb11685e02193c53c3c1bb8ef3a9404dcee1727a365\
+                a3ac6ba7fc32654101cc72cc0ee7d32b23d2018bd6dc2f932c71d4401e763d4e\
+                d9999ee6c98837aa7dbe823050697dd744b05920ad0b6393e94f9b86e92d4194\
+                06945f1e79d4be58dbaf9dc95237c951"
+        );
+    }
+
+    #[test]
+    fn shake_256_blind_commit_multiple_messages_with_proof() {
+        let cipher = BLS12_381_G1_XOF_SHAKE_256;
+        let api_id = [cipher.id, PADDING_BLIND, PADDING_API_ID].concat();
+
+        let msg_1 =
+            hex_to_bytes("5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3");
+        let msg_2 = hex_to_bytes("a75d8b634891af92282cc81a675972d1929d3149863c1fc0");
+        let msg_3 = hex_to_bytes("835889a40744813a892eff9deb1edaeb");
+        let msg_4 = hex_to_bytes("e1ca9729410dc6ba");
+        let msg_5 = hex_to_bytes("");
+
+        let committed_messages = vec![
+            msg_1.as_slice(),
+            msg_2.as_slice(),
+            msg_3.as_slice(),
+            msg_4.as_slice(),
+            msg_5.as_slice(),
+        ];
+        let (commitment_with_proof, prover_blind) = mock_blind_messages(
+            Some(&committed_messages),
+            Some(&api_id),
+            &cipher,
+            b"3.141592653589793238462643383279",
+            b"BBS_BLS12381G1_XOF:SHAKE-256_SSWU_RO_H2G_HM2S_COMMIT_MOCK_RANDOM_SCALARS_DST_",
+        );
+
+        assert_eq!(
+            prover_blind.to_string(),
+            "0x41fb2f74c30256398c927a262602b5ac3ebc6f84d9169476f8fcb1525c93b649"
+        );
+        assert_eq!(
+            bytes_to_hex(&commitment_with_proof),
+            "\
+                85d8034b358566ebfd26f921211b257d30def9962ddf80dc7cbdbf96da2bf598\
+                a8bbdc03bdc311ff290673ab29edf4a642be726c577a1aaeb11d00d10c5a07c8\
+                24bbf8e47af13042f570b6bfc05e42783d70fb3ee76ab7c2565fda74ed6536e1\
+                4105adf9ae943736a6c96c1102d1dc4424eda4ee1961f0d450736d1cc9f6b3ad\
+                2f9f1bcd3b63ef5445798b65ad04806240edee143b5c7c57f61ab7fc9fd8f0b0\
+                5d984e12cee674541b6a79202931e0ef11bcfc908660861b48cfd4ce0970c972\
+                6d9359b4bd0c853da78891e9c9db41f2029195279d92f6831b37b5c6d5ac2884\
+                0e97c12f7962e65adac6705ae712daa61c0c0bda85a3da6850a8dce296797bef\
+                f88b1c8e8459dba0730ecace09177f79"
+        );
+    }
+
+    #[test]
+    fn shake_256_blind_no_prover_committed_messages_no_signer_messages() {
+        let cipher = BLS12_381_G1_XOF_SHAKE_256;
+        let api_id = [cipher.id, PADDING_BLIND, PADDING_API_ID].concat();
+
+        let messages: Vec<&[u8]> = vec![];
+        let committed_messages: Vec<&[u8]> = vec![];
+
+        let (commitment_with_proof, prover_blind) = mock_blind_messages(
+            Some(&committed_messages),
+            Some(&api_id),
+            &cipher,
+            b"3.141592653589793238462643383279",
+            b"BBS_BLS12381G1_XOF:SHAKE-256_SSWU_RO_H2G_HM2S_COMMIT_MOCK_RANDOM_SCALARS_DST_",
+        );
+
+        let header = hex_to_bytes("11223344556677889900aabbccddeeff");
+        let secret_key_bytes =
+            hex_to_bytes("2eee0f60a8a3a8bec0ee942bfd46cbdae9a0738ee68f5a64e7238311cf09a079");
+        let public_key_bytes = hex_to_bytes(
+            "\
+                    92d37d1d6cd38fea3a873953333eab23a4c0377e3e049974eb62bd45949cdeb1\
+                    8fb0490edcd4429adff56e65cbce42cf188b31bddbd619e419b99c2c41b38179\
+                    eb001963bc3decaae0d9f702c7a8c004f207f46c734a5eae2e8e82833f3e7ea5",
+        );
+
+        assert_eq!(
+            prover_blind.to_string(),
+            "0x30bd5c9bd2b61c44dd169c92cf28bb607830c56073f10e7a800c857cb05ec249"
+        );
+        assert_eq!(
+            bytes_to_hex(&commitment_with_proof),
+            "\
+                b6389b0fdf04b9c35165acb11685e02193c53c3c1bb8ef3a9404dcee1727a365\
+                a3ac6ba7fc32654101cc72cc0ee7d32b23d2018bd6dc2f932c71d4401e763d4e\
+                d9999ee6c98837aa7dbe823050697dd744b05920ad0b6393e94f9b86e92d4194\
+                06945f1e79d4be58dbaf9dc95237c951"
+        );
+
+        let secret_key = Scalar::deserialize(&secret_key_bytes);
+        let signature = blind_sign(
+            &secret_key,
+            &public_key_bytes,
+            Some(&commitment_with_proof),
+            Some(&header),
+            Some(&messages),
+            &cipher,
+        );
+
+        println!("Signature: {:?}", bytes_to_hex(&signature.serialize()));
     }
 
     #[test]
