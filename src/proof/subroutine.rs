@@ -43,10 +43,11 @@ pub(super) fn initialize_proof(
     api_id: Option<&[u8]>,
     cipher: &Cipher,
 ) -> PreProof {
-    let empty_message_vec = vec![];
-    let empty_index_vec = vec![];
-    let inner_messages = messages.unwrap_or(&empty_message_vec);
-    let inner_undisclosed_indexes = undisclosed_indexes.unwrap_or(&empty_index_vec);
+    let default_messages = vec![];
+    let default_undisclosed_indexes = vec![];
+
+    let messages = messages.unwrap_or(&default_messages);
+    let undisclosed_indexes = undisclosed_indexes.unwrap_or(&default_undisclosed_indexes);
 
     // Deserialization:
     //
@@ -65,8 +66,8 @@ pub(super) fn initialize_proof(
 
     let a = signature.a;
     let e = signature.e;
-    let l = inner_messages.len();
-    let u = inner_undisclosed_indexes.len();
+    let l = messages.len();
+    let u = undisclosed_indexes.len();
     if random_scalars.len() != u + 5 {
         panic!("the number of random scalars must be equal to the number of undisclosed indexes plus five");
     }
@@ -88,7 +89,7 @@ pub(super) fn initialize_proof(
     // 1. For i in undisclosed_indexes, i < 0 or i > L - 1.
     // 2. U > L.
 
-    inner_undisclosed_indexes.iter().for_each(|&i| {
+    undisclosed_indexes.iter().for_each(|&i| {
         if i >= l {
             panic!("The undisclosed indexes must be in the range [0, L - 1].");
         }
@@ -113,7 +114,7 @@ pub(super) fn initialize_proof(
 
     let domain = calculate_domain(&public_key, q_1, h_points.to_vec(), header, api_id, &cipher);
     let p_1: G1Affine = G1Affine::from_compressed(&cipher.singularity).unwrap();
-    let b: G1Projective = h_points.iter().zip(inner_messages.iter()).fold(
+    let b: G1Projective = h_points.iter().zip(messages.iter()).fold(
         (p_1 + q_1 * domain).into(),
         |acc: G1Projective, (h, msg)| (acc + h * msg).into(),
     );
@@ -122,7 +123,7 @@ pub(super) fn initialize_proof(
     let b_bar = d * r_1 - a_bar * e;
 
     let t_1 = a_bar * e_tilde + d * r_1_tilde;
-    let t_2 = inner_undisclosed_indexes
+    let t_2 = undisclosed_indexes
         .iter()
         .zip(m_tildes.iter())
         .fold(d * r_3_tilde, |acc: G1Projective, (&j, &m)| {
@@ -160,8 +161,8 @@ pub(super) fn finalize_proof(
     random_scalars: &Vec<Scalar>,
     undisclosed_messages: Option<&Vec<Scalar>>,
 ) -> Proof {
-    let empty_vec = vec![];
-    let inner_undisclosed_messages = undisclosed_messages.unwrap_or(&empty_vec);
+    let default_undisclosed_messages = vec![];
+    let undisclosed_messages = undisclosed_messages.unwrap_or(&default_undisclosed_messages);
 
     // Deserialization:
     //
@@ -171,7 +172,7 @@ pub(super) fn finalize_proof(
     // 4. (undisclosed_1, undisclosed_2, ..., undisclosed_U) := undisclosed_messages.
     // 5. (A_bar, B_bar, D, _, _, _) := init_output.
 
-    let u = inner_undisclosed_messages.len();
+    let u = undisclosed_messages.len();
     if random_scalars.len() != u + 5 {
         panic!("the number of random scalars must be equal to the number of undisclosed messages plus five");
     }
@@ -203,7 +204,7 @@ pub(super) fn finalize_proof(
     let r_3_hat = r_3_tilde - r_3 * challenge;
     let m_hats: Vec<Scalar> = m_tildes
         .iter()
-        .zip(inner_undisclosed_messages.iter())
+        .zip(undisclosed_messages.iter())
         .map(|(&m_tilde, &m)| m_tilde + m * challenge)
         .collect();
 
@@ -245,10 +246,11 @@ pub(super) fn prepare_verification(
     api_id: Option<&[u8]>,
     cipher: &Cipher,
 ) -> PreProof {
-    let empty_message_vec = vec![];
-    let empty_index_vec = vec![];
-    let inner_disclosed_messages = disclosed_messages.unwrap_or(&empty_message_vec);
-    let inner_disclosed_indexes = disclosed_indexes.unwrap_or(&empty_index_vec);
+    let default_disclosed_messages = vec![];
+    let default_disclosed_indexes = vec![];
+
+    let disclosed_messages = disclosed_messages.unwrap_or(&default_disclosed_messages);
+    let disclosed_indexes = disclosed_indexes.unwrap_or(&default_disclosed_indexes);
 
     // Deserialization:
     //
@@ -279,14 +281,14 @@ pub(super) fn prepare_verification(
     let c = proof.challenge;
 
     let u = commitments.len();
-    let r = inner_disclosed_indexes.len();
+    let r = disclosed_indexes.len();
     let l = r + u;
-    inner_disclosed_indexes.iter().for_each(|&i| {
+    disclosed_indexes.iter().for_each(|&i| {
         if i >= l {
             panic!("The disclosed indexes must be in the range [0, L - 1].");
         }
     });
-    if inner_disclosed_messages.len() != r {
+    if disclosed_messages.len() != r {
         panic!("the number of disclosed messages must be equal to the number of disclosed indexes");
     }
     if generators.len() != l + 1 {
@@ -296,7 +298,7 @@ pub(super) fn prepare_verification(
     let q_1 = generators[0];
     let h_points = &generators[1..];
 
-    let disclosed_indexes_set = inner_disclosed_indexes
+    let disclosed_indexes_set = disclosed_indexes
         .iter()
         .collect::<std::collections::HashSet<_>>();
     let undisclosed_indexes: Vec<usize> = (0..l)
@@ -313,9 +315,9 @@ pub(super) fn prepare_verification(
     let domain = calculate_domain(&public_key, q_1, h_points.to_vec(), header, api_id, &cipher);
     let t_1 = b_bar * c + a_bar * e_hat + d * r_1_hat;
     let p_1: G1Affine = G1Affine::from_compressed(&cipher.singularity).unwrap();
-    let b_v: G1Projective = inner_disclosed_indexes
+    let b_v: G1Projective = disclosed_indexes
         .iter()
-        .zip(inner_disclosed_messages.iter())
+        .zip(disclosed_messages.iter())
         .fold(
             (p_1 + q_1 * domain).into(),
             |acc: G1Projective, (&i, &msg)| (acc + h_points[i] * msg).into(),
@@ -367,18 +369,21 @@ pub(super) fn calculate_challenge(
     api_id: Option<&[u8]>,
     cipher: &Cipher,
 ) -> Scalar {
-    let empty_message_vec = vec![];
-    let empty_index_vec = vec![];
-    let inner_disclosed_messages = disclosed_messages.unwrap_or(&empty_message_vec);
-    let inner_disclosed_indexes = disclosed_indexes.unwrap_or(&empty_index_vec);
-    let inner_presentation_header = presentation_header.unwrap_or(&[]);
-    let inner_api_id = api_id.unwrap_or(&[]);
+    let default_messages = vec![];
+    let default_indexes = vec![];
+    let default_presentation_header = vec![];
+    let default_api_id = vec![];
+
+    let disclosed_messages = disclosed_messages.unwrap_or(&default_messages);
+    let disclosed_indexes = disclosed_indexes.unwrap_or(&default_indexes);
+    let presentation_header = presentation_header.unwrap_or(&default_presentation_header);
+    let api_id = api_id.unwrap_or(&default_api_id);
 
     // Definition:
     //
     // 1. hash_to_scalar_dst: an octet string representing the domain separation tag: "<api_id> || H2S_".
 
-    let hash_to_scalar_dst = [inner_api_id, PADDING_HASH_TO_SCALAR].concat();
+    let hash_to_scalar_dst = [api_id, PADDING_HASH_TO_SCALAR].concat();
 
     // Deserialization:
     //
@@ -388,8 +393,8 @@ pub(super) fn calculate_challenge(
     // 4. (msg_{i_1}, msg_{i_2}, ..., msg_{i_R}) := disclosed_messages.
     // 5. (A_bar, B_bar, D, T_1, T_2, domain) := init_output.
 
-    let r = inner_disclosed_indexes.len();
-    if inner_disclosed_messages.len() != r {
+    let r = disclosed_indexes.len();
+    if disclosed_messages.len() != r {
         panic!("the number of disclosed messages must be equal to the number of disclosed indexes");
     }
 
@@ -401,7 +406,7 @@ pub(super) fn calculate_challenge(
     if r > usize::MAX {
         panic!("the number of disclosed indexes must be less than 2^64 - 1");
     }
-    if inner_presentation_header.len() > usize::MAX {
+    if presentation_header.len() > usize::MAX {
         panic!("the length of the presentation header must be less than 2^64 - 1");
     }
 
@@ -414,19 +419,19 @@ pub(super) fn calculate_challenge(
     // 3. Return hash_to_scalar(c_octets, hash_to_scalar_dst).
 
     let r_serialized = (r as u64).serialize();
-    let disclosed_indexes_serialized: Vec<u8> = inner_disclosed_indexes
+    let disclosed_indexes_serialized: Vec<u8> = disclosed_indexes
         .iter()
-        .zip(inner_disclosed_messages.iter())
+        .zip(disclosed_messages.iter())
         .flat_map(|(&i, &msg)| [(i as u64).serialize(), msg.serialize()].concat())
         .collect();
     let pre_proof_serialized = init_output.serialize();
-    let presentation_header_len = i2osp(inner_presentation_header.len() as u64, 8);
+    let presentation_header_len = i2osp(presentation_header.len() as u64, 8);
     let c_octets: Vec<u8> = [
         r_serialized,
         disclosed_indexes_serialized,
         pre_proof_serialized,
         presentation_header_len,
-        inner_presentation_header.to_vec(),
+        presentation_header.to_vec(),
     ]
     .iter()
     .flatten()

@@ -37,8 +37,8 @@ pub(crate) fn prove(
     disclosed_indexes: Option<&Vec<usize>>,
     cipher: &Cipher,
 ) -> Proof {
-    let empty_message_vec = vec![];
-    let inner_messages = messages.unwrap_or(&empty_message_vec);
+    let default_messages = vec![];
+    let messages = messages.unwrap_or(&default_messages);
 
     // Parameters:
     //
@@ -63,8 +63,8 @@ pub(crate) fn prove(
     // 4. If proof is INVALID, return INVALID.
     // 5. Return proof.
 
-    let message_scalars = messages_to_scalars(inner_messages, Some(&api_id), cipher);
-    let generators = create_generators(inner_messages.len() + 1, Some(&api_id), cipher);
+    let message_scalars = messages_to_scalars(messages, Some(&api_id), cipher);
+    let generators = create_generators(messages.len() + 1, Some(&api_id), cipher);
     super::core::prove(
         public_key,
         signature,
@@ -102,8 +102,8 @@ pub(crate) fn validate(
     disclosed_indexes: Option<&Vec<usize>>,
     cipher: &Cipher,
 ) -> bool {
-    let empty_vec = vec![];
-    let inner_disclosed_messages = disclosed_messages.unwrap_or(&empty_vec);
+    let default_disclosed_messages = vec![];
+    let disclosed_messages = disclosed_messages.unwrap_or(&default_disclosed_messages);
 
     // Parameters:
     //
@@ -121,7 +121,7 @@ pub(crate) fn validate(
     // 4. R := len(disclosed_indexes).
 
     let u = proof.m_hats.len();
-    let r = inner_disclosed_messages.len();
+    let r = disclosed_messages.len();
 
     // Procedure:
     //
@@ -139,7 +139,7 @@ pub(crate) fn validate(
     //          cipher).
     // 4. Return result.
 
-    let message_scalars = messages_to_scalars(inner_disclosed_messages, Some(&api_id), cipher);
+    let message_scalars = messages_to_scalars(disclosed_messages, Some(&api_id), cipher);
     let generators = create_generators(u + r + 1, Some(&api_id), cipher);
     super::core::verify(
         public_key,
@@ -190,18 +190,18 @@ pub fn blind_prove(
     secret_prover_blind: Option<&Scalar>,
     cipher: &Cipher,
 ) -> Proof {
-    let empty_message_vec = vec![];
-    let empty_committed_message_vec = vec![];
-    let empty_disclosed_index_vec = vec![];
-    let empty_disclosed_commitment_index_vec = vec![];
+    let default_messages = vec![];
+    let default_committed_messages = vec![];
+    let default_disclosed_indexes = vec![];
+    let default_disclosed_commitment_indexes = vec![];
     let default_secret_prover_blind = Scalar::zero();
 
-    let inner_messages = messages.unwrap_or(&empty_message_vec);
-    let inner_committed_messages = committed_messages.unwrap_or(&empty_committed_message_vec);
-    let inner_disclosed_indexes = disclosed_indexes.unwrap_or(&empty_disclosed_index_vec);
-    let inner_disclosed_commitment_indexes =
-        disclosed_commitment_indexes.unwrap_or(&empty_disclosed_commitment_index_vec);
-    let inner_secret_prover_blind = secret_prover_blind.unwrap_or(&default_secret_prover_blind);
+    let messages = messages.unwrap_or(&default_messages);
+    let committed_messages = committed_messages.unwrap_or(&default_committed_messages);
+    let disclosed_indexes = disclosed_indexes.unwrap_or(&default_disclosed_indexes);
+    let disclosed_commitment_indexes =
+        disclosed_commitment_indexes.unwrap_or(&default_disclosed_commitment_indexes);
+    let secret_prover_blind = secret_prover_blind.unwrap_or(&default_secret_prover_blind);
 
     // Parameters:
     //
@@ -218,20 +218,20 @@ pub fn blind_prove(
     // 5. If len(disclosed_commitment_indexes) > M, return INVALID.
     // 6. For j in disclosed_commitment_indexes, if j < 0 or j >= M, return INVALID.
 
-    let l = inner_messages.len();
-    let m = inner_committed_messages.len();
-    if inner_disclosed_indexes.len() > l {
+    let l = messages.len();
+    let m = committed_messages.len();
+    if disclosed_indexes.len() > l {
         panic!("Invalid disclosed indexes");
     }
-    inner_disclosed_indexes.iter().for_each(|&i| {
+    disclosed_indexes.iter().for_each(|&i| {
         if i >= l {
             panic!("Invalid disclosed indexes");
         }
     });
-    if inner_disclosed_commitment_indexes.len() > m {
+    if disclosed_commitment_indexes.len() > m {
         panic!("Invalid disclosed commitment indexes");
     }
-    inner_disclosed_commitment_indexes.iter().for_each(|&j| {
+    disclosed_commitment_indexes.iter().for_each(|&j| {
         if j >= m {
             panic!("Invalid disclosed commitment indexes");
         }
@@ -261,18 +261,18 @@ pub fn blind_prove(
     // 6. Return proof.
 
     let (message_scalars, generators) = prepare_parameters(
-        Some(&inner_messages),
-        Some(&inner_committed_messages),
+        Some(&messages),
+        Some(&committed_messages),
         l + 1,
         m + 1,
-        Some(&inner_secret_prover_blind),
+        Some(&secret_prover_blind),
         Some(&api_id),
         cipher,
     );
 
     let mut indexes: Vec<usize> = Vec::new();
-    indexes.extend(inner_disclosed_indexes);
-    inner_disclosed_commitment_indexes.iter().for_each(|&j| {
+    indexes.extend(disclosed_indexes);
+    disclosed_commitment_indexes.iter().for_each(|&j| {
         indexes.push(j + l + 1);
     });
 
@@ -320,17 +320,18 @@ pub fn blind_validate(
     disclosed_commitment_indexes: Option<&Vec<usize>>,
     cipher: &Cipher,
 ) -> bool {
-    let empty_disclosed_messages_vec = vec![];
-    let empty_disclosed_commitment_messages_vec = vec![];
-    let empty_disclosed_indexes_vec = vec![];
-    let empty_disclosed_commitment_indexes_vec = vec![];
+    let default_disclosed_messages = vec![];
+    let default_disclosed_commitment_messages = vec![];
+    let default_disclosed_indexes = vec![];
+    let default_disclosed_commitment_indexes = vec![];
 
-    let inner_disclosed_messages = disclosed_messages.unwrap_or(&empty_disclosed_messages_vec);
-    let inner_disclosed_commitment_messages =
-        disclosed_commitment_messages.unwrap_or(&empty_disclosed_commitment_messages_vec);
-    let inner_disclosed_indexes = disclosed_indexes.unwrap_or(&empty_disclosed_indexes_vec);
-    let inner_disclosed_commitment_indexes =
-        disclosed_commitment_indexes.unwrap_or(&empty_disclosed_commitment_indexes_vec);
+    let disclosed_messages = disclosed_messages.unwrap_or(&default_disclosed_messages);
+    let disclosed_commitment_messages =
+        disclosed_commitment_messages.unwrap_or(&default_disclosed_commitment_messages);
+    let disclosed_indexes = disclosed_indexes.unwrap_or(&default_disclosed_indexes);
+    let disclosed_commitment_indexes =
+        disclosed_commitment_indexes.unwrap_or(&default_disclosed_commitment_indexes);
+
     let l = l.unwrap_or(0);
 
     // Parameters:
@@ -350,8 +351,7 @@ pub fn blind_validate(
     // 5. M := total_no_messages - L.
 
     let u = proof.m_hats.len();
-    let total_no_messages =
-        inner_disclosed_indexes.len() + inner_disclosed_commitment_indexes.len() + u;
+    let total_no_messages = disclosed_indexes.len() + disclosed_commitment_indexes.len() + u;
     let m = total_no_messages - l;
 
     // Procedure:
@@ -378,8 +378,8 @@ pub fn blind_validate(
     // 6. Return result.
 
     let (message_scalars, generators) = prepare_parameters(
-        Some(&inner_disclosed_messages),
-        Some(&inner_disclosed_commitment_messages),
+        Some(&disclosed_messages),
+        Some(&disclosed_commitment_messages),
         l + 1,
         m,
         None,
@@ -387,8 +387,8 @@ pub fn blind_validate(
         cipher,
     );
     let mut indexes: Vec<usize> = Vec::new();
-    indexes.extend(inner_disclosed_indexes);
-    inner_disclosed_commitment_indexes.iter().for_each(|&j| {
+    indexes.extend(disclosed_indexes);
+    disclosed_commitment_indexes.iter().for_each(|&j| {
         indexes.push(j + l + 1);
     });
     super::core::verify(

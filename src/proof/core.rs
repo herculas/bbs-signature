@@ -41,10 +41,11 @@ pub(super) fn prove(
     api_id: Option<&[u8]>,
     cipher: &Cipher,
 ) -> Proof {
-    let empty_message_vec = vec![];
-    let empty_index_vec = vec![];
-    let inner_messages = messages.unwrap_or(&empty_message_vec);
-    let inner_disclosed_indexes = disclosed_indexes.unwrap_or(&empty_index_vec);
+    let default_messages = vec![];
+    let default_disclosed_indexes = vec![];
+
+    let messages = messages.unwrap_or(&default_messages);
+    let disclosed_indexes = disclosed_indexes.unwrap_or(&default_disclosed_indexes);
 
     // Deserialization:
     //
@@ -65,28 +66,28 @@ pub(super) fn prove(
     // 13. undisclosed_messages := (messages[j_1], messages[j_2], ..., messages[j_U]).
 
     let e = signature.e;
-    let l = inner_messages.len();
-    let r = inner_disclosed_indexes.len();
+    let l = messages.len();
+    let r = disclosed_indexes.len();
     if r > l {
         panic!("Invalid disclosed indexes");
     }
     let u = l - r;
-    inner_disclosed_indexes.iter().for_each(|&i| {
+    disclosed_indexes.iter().for_each(|&i| {
         if i > l - 1 {
             panic!("Invalid disclosed indexes");
         }
     });
 
     let undisclosed_indexes = (0..l)
-        .filter(|i| !inner_disclosed_indexes.contains(i))
+        .filter(|i| !disclosed_indexes.contains(i))
         .collect::<Vec<usize>>();
-    let disclosed_messages = inner_disclosed_indexes
+    let disclosed_messages = disclosed_indexes
         .iter()
-        .map(|&i| inner_messages[i])
+        .map(|&i| messages[i])
         .collect::<Vec<Scalar>>();
     let undisclosed_messages = undisclosed_indexes
         .iter()
-        .map(|&i| inner_messages[i])
+        .map(|&i| messages[i])
         .collect::<Vec<Scalar>>();
 
     // Procedure:
@@ -117,7 +118,7 @@ pub(super) fn prove(
         generators,
         &random_scalars,
         header,
-        messages,
+        Some(&messages),
         Some(&undisclosed_indexes),
         api_id,
         cipher,
@@ -125,7 +126,7 @@ pub(super) fn prove(
     let c = calculate_challenge(
         &init_res,
         Some(&disclosed_messages),
-        disclosed_indexes,
+        Some(&disclosed_indexes),
         presentation_header,
         api_id,
         cipher,

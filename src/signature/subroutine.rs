@@ -97,15 +97,15 @@ pub(super) fn commit(
     api_id: Option<&[u8]>,
     cipher: &Cipher,
 ) -> (Vec<u8>, Scalar) {
-    let empty_committed_message_vec = vec![];
-    let inner_committed_messages = committed_messages.unwrap_or(&empty_committed_message_vec);
+    let default_committed_messages = vec![];
+    let committed_messages = committed_messages.unwrap_or(&default_committed_messages);
 
     // Deserialization:
     //
     // 1. M := len(committed_messages).
     // 2. If len(blind_generators) != M + 1, return INVALID.
     // 3. (Q_2, J_1, ..., J_M) := blind_generators.
-    let m = inner_committed_messages.len();
+    let m = committed_messages.len();
     if blind_generators.len() != m + 1 {
         panic!("The length of the blind generators must be equal to the length of the committed messages plus one.");
     }
@@ -123,12 +123,13 @@ pub(super) fn commit(
     // 7. proof := (s^, (m^_1, ..., m^_M), challenge).
     // 8. commit_with_proof := commitment_with_proof_to_octets(C, proof).
     // 9. Return (commit_with_proof, secret_prover_blind).
+
     let random_scalars = random_scalars(m + 2);
     let secret_prover_blind = random_scalars[0];
     let tilde_s = random_scalars[1];
     let tilde_m_points = &random_scalars[2..];
 
-    let c: G1Projective = j_points.iter().zip(inner_committed_messages.iter()).fold(
+    let c: G1Projective = j_points.iter().zip(committed_messages.iter()).fold(
         (q_2 * secret_prover_blind).into(),
         |acc: G1Projective, (j, msg)| (acc + j * msg).into(),
     );
@@ -144,7 +145,7 @@ pub(super) fn commit(
     let s_hat = tilde_s + secret_prover_blind * challenge;
     let m_hats: Vec<Scalar> = tilde_m_points
         .iter()
-        .zip(inner_committed_messages.iter())
+        .zip(committed_messages.iter())
         .map(|(tilde_m, msg)| tilde_m + msg * challenge)
         .collect();
 
@@ -182,6 +183,7 @@ pub(super) fn commit_verify(
     // 3. (m^_1, ..., m^_M) := commitments.
     // 4. If len(blind_generators) != M + 1, return INVALID.
     // 5. (Q_2, J_1, ..., J_M) := blind_generators.
+
     let s_hat = commitment_proof.s_hat.clone();
     let m_hats = commitment_proof.m_hats.clone();
     let cp = commitment_proof.challenge.clone();
@@ -236,14 +238,16 @@ pub(super) fn finalize_blind_sign(
     api_id: Option<&[u8]>,
     cipher: &Cipher,
 ) -> Signature {
-    let empty_blind_generator_vec = vec![];
-    let inner_blind_generators = blind_generators.unwrap_or(&empty_blind_generator_vec);
-    let inner_api_id = api_id.unwrap_or(&[]);
+    let default_blind_generators = vec![];
+    let default_api_id = vec![];
+
+    let blind_generators = blind_generators.unwrap_or(&default_blind_generators);
+    let api_id = api_id.unwrap_or(&default_api_id);
 
     // Definitions:
     //
     // 1. hash_to_scalar_dst: an octet string representing the domain separation tag: "<api_id> || H2S_".
-    let hash_to_scalar_dst = [inner_api_id, b"H2S_"].concat();
+    let hash_to_scalar_dst = [api_id, b"H2S_"].concat();
 
     // Deserialization:
     //
@@ -254,13 +258,13 @@ pub(super) fn finalize_blind_sign(
     // 5. (Q_2, J_1, ..., J_M) := blind_generators.
 
     let l = generators.len() - 1;
-    let m = inner_blind_generators.len() - 1;
+    let m = blind_generators.len() - 1;
     if l <= 0 || m <= 0 {
         panic!("The number of generators must be greater than zero.");
     }
     let q_1 = generators[0];
     let h_points = &generators[1..];
-    let j_points = &inner_blind_generators[1..];
+    let j_points = &blind_generators[1..];
 
     // Procedure:
     //
@@ -276,7 +280,7 @@ pub(super) fn finalize_blind_sign(
         q_1,
         combined_points,
         header,
-        Some(&inner_api_id),
+        Some(&api_id),
         cipher,
     );
 
@@ -316,9 +320,10 @@ pub(super) fn deserialize_and_validate_commit(
         return G1Affine::identity();
     };
 
-    let blind_generators_empty_vec = vec![];
-    let inner_commitment_with_proof = commitment_with_proof.unwrap();
-    let inner_blind_generators = blind_generators.unwrap_or(&blind_generators_empty_vec);
+    let default_blind_generators = vec![];
+
+    let commitment_with_proof = commitment_with_proof.unwrap();
+    let blind_generators = blind_generators.unwrap_or(&default_blind_generators);
 
     // Procedure:
     //
@@ -331,19 +336,13 @@ pub(super) fn deserialize_and_validate_commit(
     // 7. If validation_res is INVALID, return INVALID.
     // 8. Return commit.
 
-    let (commit, commit_proof) = octets_to_commitment_with_proof(&inner_commitment_with_proof);
+    let (commit, commit_proof) = octets_to_commitment_with_proof(&commitment_with_proof);
 
-    if commit_proof.m_hats.len() + 1 != inner_blind_generators.len() {
+    if commit_proof.m_hats.len() + 1 != blind_generators.len() {
         return G1Affine::identity();
     };
 
-    let validation_res = commit_verify(
-        &commit,
-        &commit_proof,
-        inner_blind_generators,
-        api_id,
-        cipher,
-    );
+    let validation_res = commit_verify(&commit, &commit_proof, blind_generators, api_id, cipher);
     if validation_res == false {
         panic!("The commitment is invalid.");
     }

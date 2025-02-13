@@ -28,16 +28,19 @@ pub(super) fn sign(
     api_id: Option<&[u8]>,
     cipher: &Cipher,
 ) -> Signature {
-    let empty_vec = vec![];
-    let inner_messages = messages.unwrap_or(&empty_vec);
-    let inner_header = header.unwrap_or(&[]);
-    let inner_api_id = api_id.unwrap_or(&[]);
+    let default_messages = vec![];
+    let default_header = vec![];
+    let default_api_id = vec![];
+
+    let messages = messages.unwrap_or(&default_messages);
+    let header = header.unwrap_or(&default_header);
+    let api_id = api_id.unwrap_or(&default_api_id);
 
     // Definitions:
     //
     // - hash_to_scalar_dst: an octet string representing the domain separation tag: "<api_id> || H2S_".
 
-    let hash_to_scalar_dst = [inner_api_id, b"H2S_"].concat();
+    let hash_to_scalar_dst = [api_id, b"H2S_"].concat();
 
     // Deserialization:
     //
@@ -46,7 +49,7 @@ pub(super) fn sign(
     // 3. (msg_1, msg_2, ..., msg_L) := messages.
     // 4. (Q_1, H_1, ..., H_L) := generators.
 
-    let l = inner_messages.len();
+    let l = messages.len();
     if generators.len() != l + 1 {
         panic!("the number of generators must be equal to the number of messages plus one");
     }
@@ -65,12 +68,12 @@ pub(super) fn sign(
         &public_key,
         q_1,
         h_points.to_vec(),
-        Some(&inner_header),
-        Some(&inner_api_id),
+        Some(&header),
+        Some(&api_id),
         &cipher,
     );
     let secret_key_serialized = secret_key.serialize();
-    let message_serialized: Vec<u8> = inner_messages
+    let message_serialized: Vec<u8> = messages
         .iter()
         .flat_map(|message| message.serialize())
         .collect();
@@ -86,7 +89,7 @@ pub(super) fn sign(
         &cipher,
     );
     let p_1: G1Affine = G1Affine::from_compressed(&cipher.singularity).unwrap();
-    let b: G1Projective = h_points.iter().zip(inner_messages.iter()).fold(
+    let b: G1Projective = h_points.iter().zip(messages.iter()).fold(
         (p_1 + q_1 * domain).into(),
         |acc: G1Projective, (h, msg)| (acc + h * msg).into(),
     );
@@ -115,10 +118,13 @@ pub(super) fn verify(
     api_id: Option<&[u8]>,
     cipher: &Cipher,
 ) -> bool {
-    let empty_vec = vec![];
-    let inner_messages = messages.unwrap_or(&empty_vec);
-    let inner_header = header.unwrap_or(&[]);
-    let inner_api_id = api_id.unwrap_or(&[]);
+    let default_messages = vec![];
+    let default_header = vec![];
+    let default_api_id = vec![];
+
+    let messages = messages.unwrap_or(&default_messages);
+    let header = header.unwrap_or(&default_header);
+    let api_id = api_id.unwrap_or(&default_api_id);
 
     // Deserialization:
     //
@@ -135,7 +141,7 @@ pub(super) fn verify(
     let a = signature.a;
     let e = signature.e;
     let w = G2Affine::deserialize(&public_key);
-    let l = inner_messages.len();
+    let l = messages.len();
     if generators.len() != l + 1 {
         panic!("the number of generators must be equal to the number of messages plus one");
     }
@@ -153,12 +159,12 @@ pub(super) fn verify(
         &public_key,
         q_1,
         h_points.to_vec(),
-        Some(&inner_header),
-        Some(&inner_api_id),
+        Some(&header),
+        Some(&api_id),
         &cipher,
     );
     let p_1: G1Affine = G1Affine::from_compressed(&cipher.singularity).unwrap();
-    let b: G1Projective = h_points.iter().zip(inner_messages.iter()).fold(
+    let b: G1Projective = h_points.iter().zip(messages.iter()).fold(
         (p_1 + q_1 * domain).into(),
         |acc: G1Projective, (h, msg)| (acc + h * msg).into(),
     );
@@ -177,5 +183,3 @@ pub(super) fn verify(
         &Gt::identity(),
     )
 }
-
-

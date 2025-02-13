@@ -26,8 +26,8 @@ pub fn sign(
     messages: Option<&Vec<&[u8]>>,
     cipher: &Cipher,
 ) -> Signature {
-    let empty_vec = vec![];
-    let inner_messages = messages.unwrap_or(&empty_vec);
+    let default_messages = vec![];
+    let messages = messages.unwrap_or(&default_messages);
 
     // Parameters:
     //
@@ -50,8 +50,8 @@ pub fn sign(
     // 4. If signature is INVALID, return INVALID.
     // 5. Return signature.
 
-    let message_scalars = messages_to_scalars(inner_messages, Some(&api_id), &cipher);
-    let generators = create_generators(inner_messages.len() + 1, Some(&api_id), &cipher);
+    let message_scalars = messages_to_scalars(messages, Some(&api_id), &cipher);
+    let generators = create_generators(messages.len() + 1, Some(&api_id), &cipher);
     super::core::sign(
         &secret_key,
         &public_key,
@@ -79,8 +79,8 @@ pub fn verify(
     messages: Option<&Vec<&[u8]>>,
     cipher: &Cipher,
 ) -> bool {
-    let empty_vec = vec![];
-    let inner_messages = messages.unwrap_or(&empty_vec);
+    let default_messages = vec![];
+    let messages = messages.unwrap_or(&default_messages);
 
     // Parameters:
     //
@@ -102,8 +102,8 @@ pub fn verify(
     //          cipher).
     // 4. Return result.
 
-    let message_scalars = messages_to_scalars(inner_messages, Some(&api_id), &cipher);
-    let generators = create_generators(inner_messages.len() + 1, Some(&api_id), &cipher);
+    let message_scalars = messages_to_scalars(messages, Some(&api_id), &cipher);
+    let generators = create_generators(messages.len() + 1, Some(&api_id), &cipher);
     super::core::verify(
         &public_key,
         &signature,
@@ -124,21 +124,21 @@ pub fn verify(
 /// - `cipher`: a cipher suite.
 ///
 /// Return a tuple comprising from an octet string and a random scalar in that order.
-pub fn commit_messages(
+pub fn blind_messages(
     committed_messages: Option<&Vec<&[u8]>>,
     api_id: Option<&[u8]>,
     cipher: &Cipher,
 ) -> (Vec<u8>, Scalar) {
-    let empty_committed_message_vec = vec![];
-    let inner_committed_messages = committed_messages.unwrap_or(&empty_committed_message_vec);
+    let default_committed_messages = vec![];
+    let committed_messages = committed_messages.unwrap_or(&default_committed_messages);
 
     // Procedure:
     //
     // 1. committed_message_scalars := messages_to_scalars(committed_messages, api_id).
     // 2. blind_generators := create_generators(len(committed_message_scalars) + 1, "BLIND_" || api_id).
     // 3. return core_commit(committed_message_scalars, blind_generators, api_id).
-    let committed_message_scalars = messages_to_scalars(inner_committed_messages, api_id, cipher);
 
+    let committed_message_scalars = messages_to_scalars(committed_messages, api_id, cipher);
     let l = committed_message_scalars.len() + 1;
     let blind_generator_dst = [PADDING_BLIND, api_id.unwrap_or(&[])].concat();
     let blind_generators = create_generators(l, Some(&blind_generator_dst), cipher);
@@ -175,11 +175,11 @@ pub fn blind_sign(
     messages: Option<&Vec<&[u8]>>,
     cipher: &Cipher,
 ) -> Signature {
-    let empty_commitment_with_proof_vec = vec![];
-    let empty_messages_vec = vec![];
+    let default_commitment_with_proof = vec![];
+    let default_messages = vec![];
 
-    let inner_commit_with_proof = commitment_with_proof.unwrap_or(&empty_commitment_with_proof_vec);
-    let inner_messages = messages.unwrap_or(&empty_messages_vec);
+    let commitment_with_proof = commitment_with_proof.unwrap_or(&default_commitment_with_proof);
+    let messages = messages.unwrap_or(&default_messages);
 
     // Parameters:
     //
@@ -196,8 +196,8 @@ pub fn blind_sign(
     // 4. M := M / octet_scalar_length.
     // 5. If M < 0, return INVALID.
 
-    let l = inner_messages.len();
-    let mut m = inner_commit_with_proof.len();
+    let l = messages.len();
+    let mut m = commitment_with_proof.len();
     if m != 0 {
         m -= LENGTH_G1_POINT - LENGTH_SCALAR;
     }
@@ -221,12 +221,12 @@ pub fn blind_sign(
     let blind_api_id = [PADDING_BLIND, cipher.id, PADDING_BLIND, PADDING_API_ID].concat();
     let blind_generators = create_generators(m + 1, Some(&blind_api_id), cipher);
     let commit = deserialize_and_validate_commit(
-        Some(&inner_commit_with_proof),
+        Some(&commitment_with_proof),
         Some(&blind_generators),
         Some(&api_id),
         cipher,
     );
-    let message_scalars = messages_to_scalars(inner_messages, Some(&api_id), cipher);
+    let message_scalars = messages_to_scalars(messages, Some(&api_id), cipher);
     let res = calculate_b(&generators, Some(&commit), Some(&message_scalars));
     let b: G1Affine = res.into();
     finalize_blind_sign(
@@ -262,13 +262,13 @@ pub fn blind_verify(
     secret_prover_blind: Option<&Scalar>,
     cipher: &Cipher,
 ) -> bool {
-    let empty_messages_vec = vec![];
-    let empty_committed_messages_vec = vec![];
+    let default_messages = vec![];
+    let default_committed_messages = vec![];
     let default_secret_prover_blind = Scalar::zero();
 
-    let inner_messages = messages.unwrap_or(&empty_messages_vec);
-    let inner_committed_messages = committed_messages.unwrap_or(&empty_committed_messages_vec);
-    let inner_secret_prover_blind = secret_prover_blind.unwrap_or(&default_secret_prover_blind);
+    let messages = messages.unwrap_or(&default_messages);
+    let committed_messages = committed_messages.unwrap_or(&default_committed_messages);
+    let secret_prover_blind = secret_prover_blind.unwrap_or(&default_secret_prover_blind);
 
     // Parameters:
     //
@@ -295,11 +295,11 @@ pub fn blind_verify(
     // 3. Return res.
 
     let (message_scalars, generators) = prepare_parameters(
-        Some(&inner_messages),
-        Some(&inner_committed_messages),
-        inner_messages.len() + 1,
-        inner_committed_messages.len() + 1,
-        Some(&inner_secret_prover_blind),
+        Some(&messages),
+        Some(&committed_messages),
+        messages.len() + 1,
+        committed_messages.len() + 1,
+        Some(&secret_prover_blind),
         Some(&api_id),
         cipher,
     );
@@ -379,7 +379,7 @@ mod tests {
                 1c44d98e6d40792033e1c452145ada95030832c5dc778334f2f1b528eced21b0b\
                 97a12025a283d78b7136bb9825d04ef"
         );
-        assert_eq!(verification_result, true);
+        assert!(verification_result);
     }
 
     #[test]
@@ -458,7 +458,7 @@ mod tests {
                 faabb913ac94d18e1e92832e924cb6e202912b624261fc6c59b0fea801547f67\
                 fb7d3253e1e2acbcf90ef59a6911931e"
         );
-        assert_eq!(verification_result, true);
+        assert!(verification_result);
     }
 
     #[test]
@@ -538,7 +538,7 @@ mod tests {
                 f8df047031eef3436e04b779d92a9cdb1fe4c6cc035ba1634f1740f9dd49816d\
                 3ca745ecbe39f655ea61fb700137fded"
         );
-        assert_eq!(verification_result, true);
+        assert!(verification_result);
     }
 
     #[test]
@@ -568,8 +568,7 @@ mod tests {
             Some(&messages),
             &cipher,
         );
-
-        assert_eq!(verification_result, false);
+        assert!(!verification_result);
     }
 
     #[test]
@@ -603,8 +602,7 @@ mod tests {
             Some(&messages),
             &cipher,
         );
-
-        assert_eq!(verification_result, false);
+        assert!(!verification_result);
     }
 
     #[test]
@@ -638,8 +636,7 @@ mod tests {
             Some(&messages),
             &cipher,
         );
-
-        assert_eq!(verification_result, false);
+        assert!(!verification_result);
     }
 
     #[test]
@@ -692,8 +689,7 @@ mod tests {
             Some(&messages),
             &cipher,
         );
-
-        assert_eq!(verification_result, false);
+        assert!(!verification_result);
     }
 
     #[test]
@@ -745,8 +741,7 @@ mod tests {
             Some(&messages),
             &cipher,
         );
-
-        assert_eq!(verification_result, false);
+        assert!(!verification_result);
     }
 
     #[test]
@@ -799,8 +794,7 @@ mod tests {
             Some(&messages),
             &cipher,
         );
-
-        assert_eq!(verification_result, false);
+        assert!(!verification_result);
     }
 
     #[test]
@@ -857,7 +851,7 @@ mod tests {
                 3aa8458317cca0eae615690d55b1f27164657dcafee1d5c1973947aa70e2cfbb\
                 4c892340be5969920d0916067b4565a0"
         );
-        assert_eq!(verification_result, true);
+        assert!(verification_result);
     }
 
     #[test]
@@ -936,7 +930,7 @@ mod tests {
                 3e28f8c5f4fd0641d19cec5920d3a8ff4bedb6c9691454597bbd298288abed36\
                 32078557b2ace7d44caed846e1a0a1e8"
         );
-        assert_eq!(verification_result, true);
+        assert!(verification_result);
     }
 
     #[test]
@@ -1016,7 +1010,7 @@ mod tests {
                 f42206f6ef767f298b6a96b424c1e86c26f8fba62212d0e05b95261c2cc0e5fd\
                 c63a32731347e810fd12e9c58355aa0d"
         );
-        assert_eq!(verification_result, true);
+        assert!(verification_result);
     }
 
     #[test]
@@ -1046,8 +1040,7 @@ mod tests {
             Some(&messages),
             &cipher,
         );
-
-        assert_eq!(verification_result, false);
+        assert!(!verification_result);
     }
     //
     #[test]
@@ -1081,8 +1074,7 @@ mod tests {
             Some(&messages),
             &cipher,
         );
-
-        assert_eq!(verification_result, false);
+        assert!(!verification_result);
     }
 
     #[test]
@@ -1116,8 +1108,7 @@ mod tests {
             Some(&messages),
             &cipher,
         );
-
-        assert_eq!(verification_result, false);
+        assert!(!verification_result);
     }
 
     #[test]
@@ -1170,8 +1161,7 @@ mod tests {
             Some(&messages),
             &cipher,
         );
-
-        assert_eq!(verification_result, false);
+        assert!(!verification_result);
     }
 
     #[test]
@@ -1224,8 +1214,7 @@ mod tests {
             Some(&messages),
             &cipher,
         );
-
-        assert_eq!(verification_result, false);
+        assert!(!verification_result);
     }
 
     #[test]
@@ -1278,7 +1267,6 @@ mod tests {
             Some(&messages),
             &cipher,
         );
-
-        assert_eq!(verification_result, false);
+        assert!(!verification_result);
     }
 }

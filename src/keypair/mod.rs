@@ -6,8 +6,6 @@ use crate::utils::scalar::hash_to_scalar;
 
 use bls12_381::{G2Affine, Scalar};
 
-// TODO: name of inner unwrapped values
-
 /// Generate a secret key deterministically from the given material and info.
 ///
 /// - `key_material`: a secret octet string from which the secret key is derived, at least 32 bytes.
@@ -24,9 +22,11 @@ pub fn generate_secret_key(
     key_dst: Option<&[u8]>,
     cipher: &Cipher,
 ) -> Scalar {
-    let inner_key_info = key_info.unwrap_or(&[]);
-    let default_inner = [cipher.id, PADDING_KEYGEN_DST].concat();
-    let inner_key_dst = key_dst.unwrap_or(default_inner.as_slice());
+    let default_key_info = vec![];
+    let default_dst = [cipher.id, PADDING_KEYGEN_DST].concat();
+
+    let key_info = key_info.unwrap_or(&default_key_info);
+    let key_dst = key_dst.unwrap_or(default_dst.as_slice());
 
     // Procedure:
     //
@@ -35,19 +35,20 @@ pub fn generate_secret_key(
     // 3. derive_input := key_material || i2osp(len(key_info), 2) || key_info.
     // 4. secret_key := hash_to_scalar(derive_input, key_dst).
     // 5. Return secret_key.
+
     if key_material.len() < 32 {
         panic!("key_material must be at least 32 bytes");
     }
-    if inner_key_info.len() > 65535 {
+    if key_info.len() > 65535 {
         panic!("key_info must be at most 65535 bytes");
     }
     let derive_input = [
         key_material,
-        i2osp(inner_key_info.len() as u64, 2).as_slice(),
-        inner_key_info,
+        i2osp(key_info.len() as u64, 2).as_slice(),
+        key_info,
     ]
     .concat();
-    hash_to_scalar(&derive_input, inner_key_dst, cipher)
+    hash_to_scalar(&derive_input, key_dst, cipher)
 }
 
 /// Derive a public key from the given secret key.

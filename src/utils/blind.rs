@@ -27,10 +27,11 @@ pub fn prepare_parameters(
     api_id: Option<&[u8]>,
     cipher: &Cipher,
 ) -> (Vec<Scalar>, Vec<G1Affine>) {
-    let empty_message_vec = vec![];
-    let empty_committed_message_vec = vec![];
-    let inner_messages = messages.unwrap_or(&empty_message_vec);
-    let inner_committed_messages = committed_messages.unwrap_or(&empty_committed_message_vec);
+    let default_messages = vec![];
+    let default_committed_messages = vec![];
+
+    let messages = messages.unwrap_or(&default_messages);
+    let committed_messages = committed_messages.unwrap_or(&default_committed_messages);
 
     // Procedure:
     //
@@ -42,18 +43,14 @@ pub fn prepare_parameters(
     // 6. blind_generators := create_generators(blind_generator_number, "BLIND_" || api_id).
     // 7. Return (message_scalars.append(committed_message_scalars), generators.append(blind_generators)).
 
-    let mut message_scalars = messages_to_scalars(inner_messages, api_id, cipher);
+    let mut message_scalars = messages_to_scalars(messages, api_id, cipher);
 
     let mut committed_message_scalars = Vec::new();
     if let Some(secret_prover_blind) = secret_prover_blind {
         committed_message_scalars.push(secret_prover_blind.clone());
     }
 
-    committed_message_scalars.extend(messages_to_scalars(
-        inner_committed_messages,
-        api_id,
-        cipher,
-    ));
+    committed_message_scalars.extend(messages_to_scalars(committed_messages, api_id, cipher));
 
     let mut generators = create_generators(generator_number, api_id, cipher);
     let blind_generator_dst = [PADDING_BLIND, api_id.unwrap_or(&[])].concat();
@@ -79,10 +76,11 @@ pub fn calculate_b(
     commitment: Option<&G1Affine>,
     messages: Option<&Vec<Scalar>>,
 ) -> G1Projective {
-    let default_point = G1Affine::identity();
-    let empty_message_vec = vec![];
-    let inner_commitment = commitment.unwrap_or(&default_point);
-    let inner_messages = messages.unwrap_or(&empty_message_vec);
+    let default_commitment = G1Affine::identity();
+    let default_messages = vec![];
+
+    let commitment = commitment.unwrap_or(&default_commitment);
+    let messages = messages.unwrap_or(&default_messages);
 
     // Deserialization:
     //
@@ -91,7 +89,7 @@ pub fn calculate_b(
     // 3. (Q_1, H_1, ..., H_L) := generators.
     // 4. (msg_1, ..., msg_L) := messages.
 
-    let l = inner_messages.len();
+    let l = messages.len();
     if generators.len() != l + 1 {
         panic!("the number of generators must be equal to the number of messages plus one");
     }
@@ -106,11 +104,11 @@ pub fn calculate_b(
 
     let mut b: G1Projective = h_points
         .iter()
-        .zip(inner_messages.iter())
+        .zip(messages.iter())
         .fold(q_1.into(), |acc: G1Projective, (h, msg)| {
             (acc + h * msg).into()
         });
-    b += inner_commitment;
+    b += commitment;
     if b == G1Projective::identity() {
         panic!("the B value must not be the Identity_G1 point");
     }
@@ -134,13 +132,13 @@ pub fn calculate_blind_challenge(
     api_id: Option<&[u8]>,
     cipher: &Cipher,
 ) -> Scalar {
-    let inner_api_id = api_id.unwrap_or(&[]);
+    let api_id = api_id.unwrap_or(&[]);
 
     // Definitions:
     //
     // - hash_to_scalar_dst: an octet string representing the domain separation tag: "<api_id> || H2S_".
 
-    let hash_to_scalar_dst = [inner_api_id, PADDING_HASH_TO_SCALAR].concat();
+    let hash_to_scalar_dst = [api_id, PADDING_HASH_TO_SCALAR].concat();
 
     // Deserialization:
     //

@@ -15,15 +15,16 @@ mod utils;
 
 #[wasm_bindgen]
 pub fn generate_secret_key(
-    raw_material: &JsValue,
-    raw_info: &JsValue,
-    raw_dst: &JsValue,
-    raw_cipher: &JsValue,
+    material: &JsValue,
+    info: &JsValue,
+    dst: &JsValue,
+    cipher: &JsValue,
 ) -> JsValue {
-    let material = Vec::import(&raw_material);
-    let info = import_option_bytes(&raw_info);
-    let dst = import_option_bytes(&raw_dst);
-    let cipher = import_cipher(&raw_cipher);
+    let material = Vec::import(&material);
+    let info = import_option_bytes(&info);
+    let dst = import_option_bytes(&dst);
+    let cipher = import_cipher(&cipher);
+    
     keypair::generate_secret_key(&material, info.as_deref(), dst.as_deref(), &cipher).export()
 }
 

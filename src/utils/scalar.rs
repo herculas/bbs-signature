@@ -51,13 +51,13 @@ pub fn messages_to_scalars(
     api_id: Option<&[u8]>,
     cipher: &Cipher,
 ) -> Vec<Scalar> {
-    let inner_api_id = api_id.unwrap_or(&[]);
+    let api_id = api_id.unwrap_or(&[]);
 
     // Definition:
     //
     // 1. map_dst: an octet string representing the domain separation tag: "<api_id> || MAP_MSG_TO_SCALAR_AS_HASH_".
 
-    let map_dst = [inner_api_id, PADDING_MAP_TO_SCALAR].concat();
+    let map_dst = [api_id, PADDING_MAP_TO_SCALAR].concat();
 
     // ABORT IF:
     //
@@ -195,14 +195,14 @@ pub fn calculate_domain(
     api_id: Option<&[u8]>,
     cipher: &Cipher,
 ) -> Scalar {
-    let inner_header = header.unwrap_or(&[]);
-    let inner_api_id = api_id.unwrap_or(&[]);
+    let header = header.unwrap_or(&[]);
+    let api_id = api_id.unwrap_or(&[]);
 
     // definitions:
     //
     // 1. hash_to_scalar_dst: an octet string representing the domain separation tag: "<api_id> || H2S_".
 
-    let hash_to_scalar_dst = [inner_api_id, PADDING_HASH_TO_SCALAR].concat();
+    let hash_to_scalar_dst = [api_id, PADDING_HASH_TO_SCALAR].concat();
 
     // Deserialization:
     //
@@ -215,7 +215,7 @@ pub fn calculate_domain(
     //
     // 1. len(header) > 2^64 - 1, or L > 2^64 - 1.
 
-    if inner_header.len() > usize::MAX || l > usize::MAX {
+    if header.len() > usize::MAX || l > usize::MAX {
         panic!("header or L is too long");
     }
 
@@ -230,12 +230,12 @@ pub fn calculate_domain(
     let q_1_bytes: Vec<u8> = q_1.serialize();
     let h_points_bytes: Vec<u8> = h_points.iter().flat_map(|h| h.serialize()).collect();
 
-    let dom_octets = [l_bytes, q_1_bytes, h_points_bytes, inner_api_id.to_vec()].concat();
+    let dom_octets = [l_bytes, q_1_bytes, h_points_bytes, api_id.to_vec()].concat();
     let dom_input = [
         public_key.to_vec(),
         dom_octets,
-        i2osp(inner_header.len() as u64, 8),
-        inner_header.to_vec(),
+        i2osp(header.len() as u64, 8),
+        header.to_vec(),
     ]
     .concat();
     hash_to_scalar(&dom_input, &hash_to_scalar_dst, cipher)
