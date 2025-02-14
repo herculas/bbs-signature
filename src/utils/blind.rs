@@ -69,12 +69,14 @@ pub fn prepare_parameters(
 /// - `generators`: a list of at least one point from the G1 group.
 /// - `commitment`: a point from the G1 group. If not supplied, it defaults to the Identity_G1 point.
 /// - `messages`: a list of scalar values. If not supplied, it defaults to an empty list.
+/// - `cipher`: the cipher suite.
 ///
 /// Return an element from the G1 subgroup, or INVALID.
 pub fn calculate_b(
     generators: &Vec<G1Affine>,
     commitment: Option<&G1Affine>,
     messages: Option<&Vec<Scalar>>,
+    cipher: &Cipher,
 ) -> G1Projective {
     let default_commitment = G1Affine::identity();
     let default_messages = vec![];
@@ -93,19 +95,19 @@ pub fn calculate_b(
     if generators.len() != l + 1 {
         panic!("the number of generators must be equal to the number of messages plus one");
     }
-    let q_1 = generators[0];
     let h_points = &generators[1..];
 
     // Procedure:
     //
-    // 1. B := Q_1 + H_1 * msg_1 + ... + H_L * msg_L + commitment.
+    // 1. B := P_1 + H_1 * msg_1 + ... + H_L * msg_L + commitment.
     // 2. If B is the Identity_G1 point, return INVALID.
     // 3. Return B.
 
+    let p_1: G1Affine = G1Affine::from_compressed(&cipher.singularity).unwrap();
     let mut b: G1Projective = h_points
         .iter()
         .zip(messages.iter())
-        .fold(q_1.into(), |acc: G1Projective, (h, msg)| {
+        .fold(p_1.into(), |acc: G1Projective, (h, msg)| {
             (acc + h * msg).into()
         });
     b += commitment;

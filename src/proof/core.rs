@@ -40,12 +40,15 @@ pub(super) fn prove(
     disclosed_indexes: Option<&Vec<usize>>,
     api_id: Option<&[u8]>,
     cipher: &Cipher,
+    random_scalar_sampler: Option<fn(usize) -> Vec<Scalar>>,
 ) -> Proof {
     let default_messages = vec![];
     let default_disclosed_indexes = vec![];
+    let default_random_scalar_sampler = random_scalars;
 
     let messages = messages.unwrap_or(&default_messages);
     let disclosed_indexes = disclosed_indexes.unwrap_or(&default_disclosed_indexes);
+    let random_scalar_sampler = random_scalar_sampler.unwrap_or(default_random_scalar_sampler);
 
     // Deserialization:
     //
@@ -111,7 +114,7 @@ pub(super) fn prove(
     // 5. If challenge is INVALID, return INVALID.
     // 6. proof := proof_finalize(init_res, challenge, e, random_scalars, undisclosed_messages).
 
-    let random_scalars = random_scalars(u + 5);
+    let random_scalars = random_scalar_sampler(u + 5);
     let init_res = initialize_proof(
         public_key,
         signature,

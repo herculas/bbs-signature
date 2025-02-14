@@ -144,6 +144,20 @@ pub(crate) fn import_option_vec_bytes(raw: &JsValue) -> Option<Vec<Vec<u8>>> {
     }
 }
 
+pub(crate) fn import_option_scalar(raw: &JsValue) -> Option<Scalar> {
+    match raw.is_undefined() || raw.is_null() {
+        true => None,
+        false => Some(Scalar::import(&raw)),
+    }
+}
+
+pub(crate) fn import_option_usize(raw: &JsValue) -> Option<usize> {
+    match raw.is_undefined() || raw.is_null() {
+        true => None,
+        false => Some(raw.as_f64().unwrap() as usize),
+    }
+}
+
 pub(crate) fn import_cipher(name: &JsValue) -> Cipher {
     match name.as_string().unwrap().as_str() {
         "BLS12_381_G1_XMD_SHA_256" => BLS12_381_G1_XMD_SHA_256,
