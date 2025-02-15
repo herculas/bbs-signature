@@ -1,4 +1,4 @@
-use super::{CommitmentProof, CommitmentWithProof, Signature};
+use super::{BlindProof, CommitmentWithProof, Signature};
 
 use crate::suite::cipher::Cipher;
 
@@ -78,7 +78,7 @@ pub(super) fn commit(
         .map(|(tilde_m, msg)| tilde_m + msg * challenge)
         .collect();
 
-    let proof = CommitmentProof {
+    let proof = BlindProof {
         s_hat,
         m_hats,
         challenge,
@@ -105,7 +105,7 @@ pub(super) fn commit(
 /// Return `true` if the proof is correct, `false` otherwise.
 pub(super) fn commit_verify(
     commitment: &G1Affine,
-    commitment_proof: &CommitmentProof,
+    commitment_proof: &BlindProof,
     blind_generators: &Vec<G1Affine>,
     api_id: Option<&[u8]>,
     cipher: &Cipher,

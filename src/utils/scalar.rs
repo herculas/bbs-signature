@@ -98,7 +98,6 @@ pub fn random_scalar() -> Scalar {
 ///
 /// Return a list of `Scalar` values.
 pub fn random_scalars(count: usize) -> Vec<Scalar> {
-    // (0..count).map(|_| Scalar::one()).collect()
     // Procedure:
     //
     // 1. For i in (1, 2, ..., count):

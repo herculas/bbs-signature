@@ -1,20 +1,29 @@
 import { assertEquals } from "@std/assert"
-import { derivePublicKey, generateSecretKey } from "../lib/mod.ts"
 
-Deno.test("shake-256 key generation", () => {
-  const material = "746869732d49532d6a7573742d616e2d" +
-    "546573742d494b4d2d746f2d67656e65" +
+import { Cipher } from "../lib/constant/cipher.ts"
+import { derivePublicKey, generateSecretKey } from "../lib/api/key.ts"
+
+// Deno.test("Shake-256 key generation test", () => {
+//   const privateKey = generateSecretKey("746869732d49532d6a7573742d616e2d546573742d494b4d2d746f2d67656e65")
+//   console.log(privateKey)
+//   console.log(privateKey.length)
+
+//   const publicKey = derivePublicKey(privateKey)
+//   console.log(publicKey)
+//   console.log(publicKey.length)
+// })
+
+Deno.test("Shake-256 key generation", () => {
+  const cipher = Cipher.XOF_SHAKE_256
+
+  const material = "746869732d49532d6a7573742d616e2d546573742d494b4d2d746f2d67656e65" +
     "726174652d246528724074232d6b6579"
-  const info = "746869732d49532d736f6d652d6b6579" +
-    "2d6d657461646174612d746f2d62652d" +
-    "757365642d696e2d746573742d6b6579" +
-    "2d67656e"
-  const dst = "4242535f424c53313233383147315f58" +
-    "4f463a5348414b452d3235365f535357" +
-    "555f524f5f4832475f484d32535f4b45" +
-    "5947454e5f4453545f"
+  const info = "746869732d49532d736f6d652d6b65792d6d657461646174612d746f2d62652d" +
+    "757365642d696e2d746573742d6b65792d67656e"
+  const dst = "4242535f424c53313233383147315f584f463a5348414b452d3235365f535357" +
+    "555f524f5f4832475f484d32535f4b455947454e5f4453545f"
 
-  const privateKey = generateSecretKey(material, info, dst, "BLS12_381_G1_XOF_SHAKE_256")
+  const privateKey = generateSecretKey(material, info, dst, cipher)
   const publicKey = derivePublicKey(privateKey)
 
   assertEquals(privateKey, "2eee0f60a8a3a8bec0ee942bfd46cbdae9a0738ee68f5a64e7238311cf09a079")
@@ -26,20 +35,17 @@ Deno.test("shake-256 key generation", () => {
   )
 })
 
-Deno.test("sha-256 key generation", () => {
-  const material = "746869732d49532d6a7573742d616e2d" +
-    "546573742d494b4d2d746f2d67656e65" +
-    "726174652d246528724074232d6b6579"
-  const info = "746869732d49532d736f6d652d6b6579" +
-    "2d6d657461646174612d746f2d62652d" +
-    "757365642d696e2d746573742d6b6579" +
-    "2d67656e"
-  const dst = "4242535f424c53313233383147315f58" +
-    "4d443a5348412d3235365f535357555f" +
-    "524f5f4832475f484d32535f4b455947" +
-    "454e5f4453545f"
+Deno.test("Sha-256 key generation", () => {
+  const cipher = Cipher.XMD_SHA_256
 
-  const privateKey = generateSecretKey(material, info, dst, "BLS12_381_G1_XMD_SHA_256")
+  const material = "746869732d49532d6a7573742d616e2d546573742d494b4d2d746f2d67656e65" +
+    "726174652d246528724074232d6b6579"
+  const info = "746869732d49532d736f6d652d6b65792d6d657461646174612d746f2d62652d" +
+    "757365642d696e2d746573742d6b65792d67656e"
+  const dst = "4242535f424c53313233383147315f584d443a5348412d3235365f535357555f" +
+    "524f5f4832475f484d32535f4b455947454e5f4453545f"
+
+  const privateKey = generateSecretKey(material, info, dst, cipher)
   const publicKey = derivePublicKey(privateKey)
 
   assertEquals(privateKey, "60e55110f76883a13d030b2f6bd11883422d5abde717569fc0731f51237169fc")

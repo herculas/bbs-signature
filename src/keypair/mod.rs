@@ -62,6 +62,7 @@ pub fn derive_public_key(secret_key: &Scalar) -> [u8; 96] {
     //
     // 1. W := secret_key * BP2.
     // 2. Return point_to_octets_E2(W).
+
     let w: G2Affine = (G2Affine::generator() * secret_key).into();
     w.to_compressed()
 }

@@ -48,13 +48,13 @@ impl Import for Signature {
 /// A zero-knowledge proof-of-correctness of a commitment, consisting of a scalar value, a possibly empty set of scalars
 /// (of length equal to the number of committed messages), and another scalar, in that order.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct CommitmentProof {
+pub(crate) struct BlindProof {
     s_hat: Scalar,
     m_hats: Vec<Scalar>,
     challenge: Scalar,
 }
 
-impl Serialize for CommitmentProof {
+impl Serialize for BlindProof {
     fn serialize(&self) -> Vec<u8> {
         let mut serialized = Vec::new();
         serialized.extend_from_slice(&self.s_hat.serialize());
@@ -66,7 +66,7 @@ impl Serialize for CommitmentProof {
     }
 }
 
-impl Deserialize for CommitmentProof {
+impl Deserialize for BlindProof {
     fn deserialize(bytes: &[u8]) -> Self {
         let s_hat = Scalar::deserialize(&bytes[..LENGTH_SCALAR]);
 
@@ -89,7 +89,7 @@ impl Deserialize for CommitmentProof {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct CommitmentWithProof {
     commitment: G1Affine,
-    proof: CommitmentProof,
+    proof: BlindProof,
 }
 
 impl Serialize for CommitmentWithProof {
@@ -147,7 +147,7 @@ impl Deserialize for CommitmentWithProof {
         }
 
         let proof_octets = &bytes[LENGTH_G1_POINT..];
-        let proof = CommitmentProof::deserialize(proof_octets);
+        let proof = BlindProof::deserialize(proof_octets);
 
         Self { commitment, proof }
     }
