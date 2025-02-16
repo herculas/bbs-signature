@@ -1,4 +1,4 @@
-use super::{PreProof, Proof};
+use super::{PreProof, Proof, PseudonymProof};
 
 use crate::signature::Signature;
 
@@ -419,18 +419,126 @@ pub(super) fn calculate_challenge(
     // 3. Return hash_to_scalar(c_octets, hash_to_scalar_dst).
 
     let r_serialized = (r as u64).serialize();
-    let disclosed_indexes_serialized: Vec<u8> = disclosed_indexes
+    let disclosed_serialized: Vec<u8> = disclosed_indexes
         .iter()
         .zip(disclosed_messages.iter())
         .flat_map(|(&i, &msg)| [(i as u64).serialize(), msg.serialize()].concat())
         .collect();
     let pre_proof_serialized = init_output.serialize();
-    let presentation_header_len = i2osp(presentation_header.len() as u64, 8);
+    let presentation_header_len_serialized = i2osp(presentation_header.len() as u64, 8);
     let c_octets: Vec<u8> = [
         r_serialized,
-        disclosed_indexes_serialized,
+        disclosed_serialized,
         pre_proof_serialized,
-        presentation_header_len,
+        presentation_header_len_serialized,
+        presentation_header.to_vec(),
+    ]
+    .iter()
+    .flatten()
+    .cloned()
+    .collect();
+    hash_to_scalar(&c_octets, &hash_to_scalar_dst, &cipher)
+}
+
+/// Calculate the challenge scalar used during proof with pseudonym generation and verification.
+///
+/// - `init_res`: the output of the initialization operation.
+/// - `pseudonym_init_res`: the output after initializing the pseudonym proof.
+/// - `disclosed_messages`: the disclosed messages after mapped to scalars.
+/// - `disclosed_indexes`: the indexes of the disclosed messages.
+/// - `presentation_header`: an octet string containing the context specific information.
+/// - `api_id`: an octet string representing the API identifier.
+/// - `cipher`: a cipher suite.
+///
+/// Return a scalar representing the challenge.
+pub(super) fn calculate_proof_with_pseudonym_challenge(
+    init_res: &PreProof,
+    pseudonym_init_res: &PseudonymProof,
+    disclosed_messages: Option<&Vec<Scalar>>,
+    disclosed_indexes: Option<&Vec<usize>>,
+    presentation_header: Option<&[u8]>,
+    api_id: Option<&[u8]>,
+    cipher: &Cipher,
+) -> Scalar {
+    let default_messages = vec![];
+    let default_indexes = vec![];
+    let default_presentation_header = vec![];
+    let default_api_id = vec![];
+
+    let disclosed_messages = disclosed_messages.unwrap_or(&default_messages);
+    let disclosed_indexes = disclosed_indexes.unwrap_or(&default_indexes);
+    let presentation_header = presentation_header.unwrap_or(&default_presentation_header);
+    let api_id = api_id.unwrap_or(&default_api_id);
+
+    // Definition:
+    //
+    // 1. hash_to_scalar_dst: an octet string representing the domain separation tag: "<api_id> || H2S_".
+
+    let hash_to_scalar_dst = [api_id, PADDING_HASH_TO_SCALAR].concat();
+
+    // Deserialization:
+    //
+    // 1. R := len(disclosed_indexes).
+    // 2. (i_1, i_2, ..., i_R) := disclosed_indexes.
+    // 3. (msg_{i_1}, msg_{i_2}, ..., msg_{i_R}) := disclosed_messages.
+    // 4. (A_bar, B_bar, D, T_1, T_2, domain) := init_res.
+    // 5. (Pseudonym, OP, Ut) := pseudonym_init_res.
+
+    let r = disclosed_indexes.len();
+
+    // ABORT IF:
+    //
+    // 1. R > 2^64 - 1.
+    // 2. len(disclosed_messages) != R.
+    // 2. len(presentation_header) > 2^64 - 1.
+
+    if r > usize::MAX {
+        panic!("the number of disclosed indexes must be less than 2^64 - 1");
+    }
+    if disclosed_messages.len() != r {
+        panic!("the number of disclosed messages must be equal to the number of disclosed indexes");
+    }
+    if presentation_header.len() > usize::MAX {
+        panic!("the length of the presentation header must be less than 2^64 - 1");
+    }
+
+    // Procedure:
+    //
+    // 1. c_arr := (R,
+    //          i_1, msg_{i_1}, i_2, msg_{i_2}, ..., i_R, msg_{i_R},
+    //          A_bar, B_bar, D, T_1, T_2, Pseudonym, OP, Ut, domain).
+    // 2. c_octets := serialize(c_arr) || i2osp(len(presentation_header), 8) || presentation_header.
+    // 3. Return hash_to_scalar(c_octets, hash_to_scalar_dst).
+
+    let r_serialized = (r as u64).serialize();
+    let disclosed_serialized: Vec<u8> = disclosed_indexes
+        .iter()
+        .zip(disclosed_messages.iter())
+        .flat_map(|(&i, &msg)| [(i as u64).serialize(), msg.serialize()].concat())
+        .collect();
+
+    // octets of the pre-proof, pseudonym proof, intertwined
+    let a_bar_serialized = init_res.a_bar.serialize();
+    let b_bar_serialized = init_res.b_bar.serialize();
+    let d_serialized = init_res.d.serialize();
+    let t_1_serialized = init_res.t_1.serialize();
+    let t_2_serialized = init_res.t_2.serialize();
+    let pseudonym_proof_serialized = pseudonym_init_res.serialize();
+    let domain_serialized = init_res.domain.serialize();
+
+    let presentation_header_len_serialized = i2osp(presentation_header.len() as u64, 8);
+
+    let c_octets: Vec<u8> = [
+        r_serialized,
+        disclosed_serialized,
+        a_bar_serialized,
+        b_bar_serialized,
+        d_serialized,
+        t_1_serialized,
+        t_2_serialized,
+        pseudonym_proof_serialized,
+        domain_serialized,
+        presentation_header_len_serialized,
         presentation_header.to_vec(),
     ]
     .iter()

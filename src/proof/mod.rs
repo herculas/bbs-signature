@@ -11,7 +11,7 @@ pub(crate) mod interface;
 mod subroutine;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct PreProof {
+struct PreProof {
     a_bar: G1Affine,
     b_bar: G1Affine,
     d: G1Affine,
@@ -49,6 +49,32 @@ impl Deserialize for PreProof {
             t_2,
             domain,
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PseudonymProof {
+    pseudonym: G1Affine,
+    op: G1Affine,
+    uv: G1Affine,
+}
+
+impl Serialize for PseudonymProof {
+    fn serialize(&self) -> Vec<u8> {
+        let mut serialized = Vec::new();
+        serialized.extend_from_slice(&self.pseudonym.serialize());
+        serialized.extend_from_slice(&self.op.serialize());
+        serialized.extend_from_slice(&self.uv.serialize());
+        serialized
+    }
+}
+
+impl Deserialize for PseudonymProof {
+    fn deserialize(bytes: &[u8]) -> Self {
+        let pseudonym = G1Affine::deserialize(&bytes[..LENGTH_G1_POINT]);
+        let op = G1Affine::deserialize(&bytes[LENGTH_G1_POINT..LENGTH_G1_POINT * 2]);
+        let uv = G1Affine::deserialize(&bytes[LENGTH_G1_POINT * 2..]);
+        PseudonymProof { pseudonym, op, uv }
     }
 }
 

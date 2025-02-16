@@ -83,7 +83,6 @@ pub fn messages_to_scalars(
 /// Sample a random scalar value.
 ///
 /// Return a `Scalar` value.
-#[allow(dead_code)]
 pub fn random_scalar() -> Scalar {
     let mut buf = [0u8; LENGTH_MESSAGE_EXPAND];
     getrandom(&mut buf).unwrap();
@@ -104,14 +103,7 @@ pub fn random_scalars(count: usize) -> Vec<Scalar> {
     // 2.   scalar_i := os2ip(get_random(expand_len)) mod r.
     // 3. Return (scalar_1, scalar_2, ..., scalar_count).
 
-    (0..count)
-        .map(|_| {
-            let mut buf = [0u8; LENGTH_MESSAGE_EXPAND];
-            getrandom(&mut buf).unwrap();
-            let array: GenericArray<u8, U48> = GenericArray::clone_from_slice(&buf);
-            Scalar::from_okm(&array)
-        })
-        .collect()
+    (0..count).map(|_| random_scalar()).collect()
 }
 
 /// Deterministically calculate `count` pseudo-random scalars from a single `seed`, given a domain separation tag `dst`.
