@@ -61,12 +61,37 @@ The following flowchart illustrates the key participants and data flows in the b
 
 ### Pseudonym BBS Signature
 
+BBS proofs are designed to be unlinkable—given two different BBS proofs, it's impossible to determine if they come from
+the same BBS signature. When provers don't reveal additional identity information, verifiers cannot cryptographically
+track or link different proof presentations, enhancing user privacy. However, some applications require verifiers to
+track BBS proofs from the same prover for security monitoring, monetization services, and configuration persistence. For
+privacy protection, provers must not reveal or bind a persistent unique identifier across different verifiers, as this
+would enable linking of the prover's interactions.
+
+To address these challenges, we can introduce pseudonyms into BBS proofs. A pseudonym remains constant when a prover
+presents proofs to the same verifier but changes and becomes unlinkable when interacting with different verifiers. This
+allows verifiers to track presentations made to them while preventing tracking of prover interactions with other
+verifiers.
+
+To achieve this balance between traceability and privacy, we introduce a pseudonym system where values remain constant
+for individual verifier-prover pairs but change across different verifiers, with no correlation possible between
+different pseudonym values. We construct each pseudonym by combining a unique verifier identifier with a unique prover
+identifier. To prevent forgery, the prover's identifier is signed by the same BBS signature used for the proof
+generation. This approach requires enhanced BBS proof operations with additional computations to verify the pseudonym's
+correctness—specifically proving its proper calculation using the verifier identifier and the undisclosed, signed prover
+identifier.
+
+The prover identifier must remain confidential, as its exposure would enable tracking of the prover's activities across
+all verifiers. When implemented correctly, pseudonyms prevent both verifier-verifier collusion (verifiers correlating
+proof presentations among themselves) and verifier-signer collusion (signers correlating prover presentations to
+verifiers).
+
 ## Getting started
 
 To refer to this package within your Deno project, run:
 
 ```shell
-deno add jsr:@crumble-jon/bbs-signature
+deno add jsr:@herculas/bbs-signature
 ```
 
 ## Usage
