@@ -1,11 +1,14 @@
-use super::subroutine::{commit, deserialize_and_validate_commit, finalize_blind_sign};
+use super::subroutine::{blind_commit, deserialize_and_validate_blind_commit, finalize_blind_sign};
 use super::{CommitmentWithProof, Signature};
 
 use crate::suite::cipher::Cipher;
-use crate::suite::constants::{LENGTH_G1_POINT, LENGTH_SCALAR, PADDING_API_ID, PADDING_BLIND};
+use crate::suite::constants::{
+    LENGTH_G1_POINT, LENGTH_SCALAR, PADDING_API_ID, PADDING_BLIND, PADDING_PSEUDONYM,
+};
 
 use crate::utils::blind::{calculate_b, prepare_parameters};
 use crate::utils::generator::create_generators;
+use crate::utils::pseudonym::calculate_b_with_nym;
 use crate::utils::scalar::messages_to_scalars;
 
 use bls12_381::{G1Affine, Scalar};
@@ -122,6 +125,7 @@ pub fn verify(
 /// - `committed_messages`: a list of octet strings containing the messages to be committed.
 /// - `api_id`: an octet string representing the API identifier.
 /// - `cipher`: a cipher suite.
+/// - `random_scalar_sampler`: a function that returns a list of random scalars.
 ///
 /// Return a tuple comprising from an octet string and a random scalar in that order.
 pub fn blind_messages(
@@ -140,13 +144,13 @@ pub fn blind_messages(
     //
     // 1. committed_message_scalars := messages_to_scalars(committed_messages, api_id).
     // 2. blind_generators := create_generators(len(committed_message_scalars) + 1, "BLIND_" || api_id).
-    // 3. return core_commit(committed_message_scalars, blind_generators, api_id).
+    // 3. Return core_commit(committed_message_scalars, blind_generators, api_id).
 
     let committed_message_scalars = messages_to_scalars(committed_messages, Some(&api_id), cipher);
     let l = committed_message_scalars.len() + 1;
     let blind_generator_dst = [PADDING_BLIND, api_id].concat();
     let blind_generators = create_generators(l, Some(&blind_generator_dst), cipher);
-    commit(
+    blind_commit(
         &blind_generators,
         Some(&committed_message_scalars),
         Some(&api_id),
@@ -228,7 +232,7 @@ pub fn blind_sign(
     let generators = create_generators(l + 1, Some(&api_id), cipher);
     let blind_generators = create_generators(m + 1, Some(&blind_api_id), cipher);
 
-    let commitment = deserialize_and_validate_commit(
+    let commitment = deserialize_and_validate_blind_commit(
         Some(&commitment_with_proof),
         Some(&blind_generators),
         Some(&api_id),
@@ -328,6 +332,247 @@ pub fn blind_verify(
         Some(&api_id),
         cipher,
     )
+}
+
+/// Create a commitment to a set of messages that the prover intend to include in the blind signature. This operation
+/// also include the singer's part of the pseudonym secret `prover_nym` as a random scalar value.
+///
+/// - `committed_messages`: a list of octet strings containing the messages to be committed.
+/// - `prover_nym`: a scalar representing the prover's part of the pseudonym secret.
+/// - `api_id`: an octet string representing the API identifier.
+/// - `cipher`: a cipher suite.
+/// - `random_scalar_sampler`: a function that returns a list of random scalars.
+///
+/// Return a tuple comprising from an octet string and a random scalar in that order.
+pub fn blind_messages_with_nym(
+    committed_messages: Option<&Vec<&[u8]>>,
+    prover_nym: Option<&Scalar>,
+    api_id: Option<&[u8]>,
+    cipher: &Cipher,
+    random_scalar_sampler: Option<fn(usize) -> Vec<Scalar>>,
+) -> (CommitmentWithProof, Scalar) {
+    let default_committed_messages = vec![];
+    let default_prover_nym = Scalar::zero();
+    let default_api_id = [cipher.id, PADDING_BLIND, PADDING_API_ID].concat();
+
+    let committed_messages = committed_messages.unwrap_or(&default_committed_messages);
+    let prover_nym = prover_nym.unwrap_or(&default_prover_nym);
+    let api_id = api_id.unwrap_or(&default_api_id);
+
+    // Procedure:
+    //
+    // 1. committed_message_scalars := messages_to_scalars(committed_messages, api_id).
+    // 2. committed_message_scalars.append(prover_nym).
+    // 3. blind_generators := create_generators(len(committed_message_scalars) + 1, "BLIND_" || api_id).
+    // 4. Return core_commit(committed_message_scalars, blind_generators, api_id).
+
+    let mut committed_message_scalars =
+        messages_to_scalars(committed_messages, Some(&api_id), cipher);
+    committed_message_scalars.push(prover_nym.clone());
+
+    let m = committed_message_scalars.len();
+    let blind_generator_dst = [PADDING_BLIND, api_id].concat();
+    let blind_generators = create_generators(m + 1, Some(&blind_generator_dst), cipher);
+
+    blind_commit(
+        &blind_generators,
+        Some(&committed_message_scalars),
+        Some(&api_id),
+        cipher,
+        random_scalar_sampler,
+    )
+}
+
+/// Generate a signature from a secret key, the commitment with proof, and optionally over a header and a vector of
+/// messages.
+///
+/// - `secret_key`: a scalar representing the secret key.
+/// - `public_key`: an octet string representing the public key.
+/// - `commitment_with_proof`: an octet string, representing a serialized commitment and commitment proof, as the first
+///         element outputted by the commit operation. If not supplied, it defaults to an empty octet string.
+/// - `header`: an octet string containing the context and application specific information.
+/// - `messages`: a list of octet strings containing the messages to be signed.
+/// - `cipher`: a cipher suite.
+///
+/// Return a blind BBS signature and the signer's part of the pseudonym secret.
+pub fn blind_sign_with_nym(
+    secret_key: &Scalar,
+    public_key: &[u8],
+    commitment_with_proof: Option<&[u8]>,
+    header: Option<&[u8]>,
+    messages: Option<&Vec<&[u8]>>,
+    cipher: &Cipher,
+) -> (Signature, Scalar) {
+    let default_commitment_with_proof = vec![];
+    let default_messages = vec![];
+
+    let commitment_with_proof = commitment_with_proof.unwrap_or(&default_commitment_with_proof);
+    let messages = messages.unwrap_or(&default_messages);
+
+    // Parameters:
+    //
+    // - api_id: an octet string "<cipher_suite_id> || H2G_HM2S_PSEUDONYM_".
+
+    let api_id = [cipher.id, PADDING_API_ID, PADDING_PSEUDONYM].concat();
+    let blind_api_id = [PADDING_BLIND, cipher.id, PADDING_API_ID, PADDING_PSEUDONYM].concat();
+
+    // Deserialization:
+    //
+    // 1. L := len(messages).
+    // 2. M := len(commitment_with_proof).
+    // 3. If M != 0, M = M - octet_point_length - octet_scalar_length.
+    // 4. M = M / octet_scalar_length.
+    // 5. If M < 0, return INVALID.
+
+    let l = messages.len();
+    let mut m = commitment_with_proof.len();
+    if m != 0 {
+        if m < LENGTH_G1_POINT + 2 * LENGTH_SCALAR {
+            panic!("The commitment with proof should be at least a G1 point and two scalars.");
+        }
+        m -= LENGTH_G1_POINT + 2 * LENGTH_SCALAR;
+    }
+    m /= LENGTH_SCALAR;
+
+    // Procedure:
+    //
+    // 1. generators := create_generators(L + 1, api_id).
+    // 2. blind_generators := create_generators(M + 1, "BLIND_" || api_id).
+    // 3. commit := deserialize_and_validate_commit(commitment_with_proof, blind_generators, api_id).
+    // 4. If commit is INVALID, return INVALID.
+    // 5. message_scalars := messages_to_scalars(messages, api_id).
+    // 6. res := calculate_B(generators, commit, blind_generators[-1], message_scalars).
+    // 7. If res is INVALID, return INVALID.
+    // 8. (B, signer_nym_entropy) := res.
+    // 9. blind_sig := finalize_blind_sign(secret_key, public_key, B, generators, blind_generators, header, api_id).
+    // 10. If blind_sig is INVALID, return INVALID.
+    // 11. Return (blind_sig, signer_nym_entropy).
+
+    let generators = create_generators(l + 1, Some(&api_id), cipher);
+    let blind_generators = create_generators(m + 1, Some(&blind_api_id), cipher);
+
+    let commitment = deserialize_and_validate_blind_commit(
+        Some(&commitment_with_proof),
+        Some(&blind_generators),
+        Some(&api_id),
+        cipher,
+    );
+
+    let message_scalars = messages_to_scalars(messages, Some(&api_id), cipher);
+
+    let (b, signer_nym_entropy) = calculate_b_with_nym(
+        &generators,
+        Some(&commitment),
+        Some(blind_generators.last().unwrap()),
+        Some(&message_scalars),
+        cipher,
+    );
+
+    let blind_sig = finalize_blind_sign(
+        secret_key,
+        public_key,
+        &b.into(),
+        &generators,
+        Some(&blind_generators),
+        header,
+        Some(&api_id),
+        cipher,
+    );
+
+    (blind_sig, signer_nym_entropy)
+}
+
+/// Verify the blind BBS signature and calculate the final pseudonym secret value used to calculate the pseudonym value
+/// during the proof generation.
+///
+/// - `public_key`: an octet string representing the public key.
+/// - `signature`: a BBS Signature.
+/// - `header`: an octet string containing the context and application specific information.
+/// - `messages`: a list of octet strings containing the messages to be signed.
+/// - `committed_messages`: a list of octet strings containing the committed messages.
+/// - `prover_nym`: a scalar representing the prover's part of the pseudonym secret.
+/// - `signer_nym_entropy`: a scalar representing the signer's part of the pseudonym secret.
+/// - `secret_prover_blind`: a scalar representing the secret prover blind value.
+/// - `cipher`: a cipher suite.
+///
+/// Return the final pseudonym secret value; or INVALID.
+pub fn blind_verify_with_nym(
+    public_key: &[u8],
+    signature: &Signature,
+    header: Option<&[u8]>,
+    messages: Option<&Vec<&[u8]>>,
+    committed_messages: Option<&Vec<&[u8]>>,
+    prover_nym: Option<&Scalar>,
+    signer_nym_entropy: Option<&Scalar>,
+    secret_prover_blind: Option<&Scalar>,
+    cipher: &Cipher,
+) -> Option<Scalar> {
+    let default_messages = vec![];
+    let default_committed_messages = vec![];
+    let default_prover_nym = Scalar::zero();
+    let default_signer_nym_entropy = Scalar::zero();
+    let default_secret_prover_blind = Scalar::zero();
+
+    let messages = messages.unwrap_or(&default_messages);
+    let committed_messages = committed_messages.unwrap_or(&default_committed_messages);
+    let prover_nym = prover_nym.unwrap_or(&default_prover_nym);
+    let signer_nym_entropy = signer_nym_entropy.unwrap_or(&default_signer_nym_entropy);
+    let secret_prover_blind = secret_prover_blind.unwrap_or(&default_secret_prover_blind);
+
+    // Parameters:
+    //
+    // - api_id: an octet string "<cipher_suite_id> || H2G_HM2S_PSEUDONYM_".
+
+    let api_id = [cipher.id, PADDING_API_ID, PADDING_PSEUDONYM].concat();
+
+    // Procedure:
+    //
+    // 1. (message_scalars, generators) := prepare_parameters(
+    //          messages,
+    //          committed_messages,
+    //          len(messages) + 1,
+    //          len(committed_messages) + 2,
+    //          secret_prover_blind,
+    //          api_id).
+    // 2. nym_secret := prover_nym + signer_nym_entropy.
+    // 3. message_scalars.append(nym_secret).
+    // 4. res := core_verify(
+    //          public_key,
+    //          signature,
+    //          generators,
+    //          header,
+    //          message_scalars,
+    //          api_id).
+    // 5. If res is INVALID, return INVALID.
+    // 3. Return nym_secret.
+
+    let (message_scalars, generators) = prepare_parameters(
+        Some(&messages),
+        Some(&committed_messages),
+        messages.len() + 1,
+        committed_messages.len() + 2,
+        Some(&secret_prover_blind),
+        Some(&api_id),
+        cipher,
+    );
+    let nym_secret = prover_nym + signer_nym_entropy;
+    let mut message_scalars = message_scalars;
+    message_scalars.push(nym_secret);
+    let res = super::core::verify(
+        public_key,
+        signature,
+        &generators,
+        header,
+        Some(&message_scalars),
+        Some(&api_id),
+        cipher,
+    );
+
+    if res {
+        Some(nym_secret)
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]
@@ -837,8 +1082,7 @@ mod tests {
             prover_blind.to_string(),
             "0x30bd5c9bd2b61c44dd169c92cf28bb607830c56073f10e7a800c857cb05ec249"
         );
-        
-        
+
         assert_eq!(
             bytes_to_hex(&commitment_with_proof.serialize()),
             "\
@@ -852,7 +1096,6 @@ mod tests {
     #[test]
     fn shake_256_blind_commit_multiple_messages_with_proof() {
         let cipher = BLS12_381_G1_XOF_SHAKE_256;
-        // let api_id = [cipher.id, PADDING_BLIND, PADDING_API_ID].concat();
 
         let committed_msg_1 =
             hex_to_bytes("5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3");
@@ -1361,6 +1604,130 @@ mod tests {
         );
 
         assert!(verification_result);
+    }
+
+    #[test]
+    fn shake_256_pseudonym_commit_pid_message_with_proof() {
+        let cipher = BLS12_381_G1_XOF_SHAKE_256;
+        let api_id = [cipher.id, PADDING_API_ID, PADDING_PSEUDONYM].concat();
+        let committed_messages: Vec<&[u8]> = vec![];
+
+        let prover_nym_bytes =
+            hex_to_bytes("6830ea571e9fca0194d9ebd5c571369d8b81655afe0bbb9c6f5efe934f699418");
+        let prover_nym = Scalar::deserialize(&prover_nym_bytes);
+
+        let (commitment_with_proof, prover_blind) = blind_messages_with_nym(
+            Some(&committed_messages),
+            Some(&prover_nym),
+            Some(&api_id),
+            &cipher,
+            Some(|count: usize| -> Vec<Scalar> {
+                seeded_random_scalars(
+                    b"3.141592653589793238462643383279",
+                    b"BBS_BLS12381G1_XOF:SHAKE-256_SSWU_RO_H2G_HM2S_COMMIT_MOCK_RANDOM_SCALARS_DST_",
+                    count,
+                    &BLS12_381_G1_XOF_SHAKE_256,
+                )
+            }),
+        );
+
+        assert_eq!(
+            prover_blind.to_string(),
+            "0x643a0c0bc86a50e0d8c00bfe6c8debd85373597e1aef6cc912838bf7dc376e48"
+        );
+
+        assert_eq!(
+            bytes_to_hex(&commitment_with_proof.serialize()),
+            "\
+                990c1837a8af86843213e5b12fbfc962efcaf8fd0e5812a6237b91b00a47b5a3\
+                4714a60b4c365f72b47a4d9b656dde4753a18a8286aca2bf58e8bb9a3d77a3e0\
+                052aefc427e5e47b666255e53cfcaa7d34d36adc13da01798b8eb041652a57c3\
+                b595ace54ed5eee43370c1697eb5ce996020d88ca5d811c011cde10c6c07dc2f\
+                4acbc89bd5652414d5b8823a250ed40b"
+        );
+    }
+
+    #[test]
+    fn shake_256_pseudonym_hidden_pid_valid_all_message_signature() {
+        let cipher = BLS12_381_G1_XOF_SHAKE_256;
+
+        let prover_nym_bytes =
+            hex_to_bytes("6830ea571e9fca0194d9ebd5c571369d8b81655afe0bbb9c6f5efe934f699418");
+        let prover_nym = Scalar::deserialize(&prover_nym_bytes);
+
+        let prover_blindness_bytes =
+            "643a0c0bc86a50e0d8c00bfe6c8debd85373597e1aef6cc912838bf7dc376e48";
+        let prover_blindness = Scalar::deserialize(&hex_to_bytes(prover_blindness_bytes));
+
+        let msg_1 =
+            hex_to_bytes("9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02");
+        let msg_2 =
+            hex_to_bytes("c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80");
+        let msg_3 = hex_to_bytes("7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73");
+        let msg_4 = hex_to_bytes("77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c");
+        let msg_5 = hex_to_bytes("496694774c5604ab1b2544eababcf0f53278ff50");
+        let msg_6 = hex_to_bytes("515ae153e22aae04ad16f759e07237b4");
+        let msg_7 = hex_to_bytes("d183ddc6e2665aa4e2f088af");
+        let msg_8 = hex_to_bytes("ac55fb33a75909ed");
+        let msg_9 = hex_to_bytes("96012096");
+        let msg_10 = hex_to_bytes("");
+
+        let messages = &vec![
+            msg_1.as_slice(),
+            msg_2.as_slice(),
+            msg_3.as_slice(),
+            msg_4.as_slice(),
+            msg_5.as_slice(),
+            msg_6.as_slice(),
+            msg_7.as_slice(),
+            msg_8.as_slice(),
+            msg_9.as_slice(),
+            msg_10.as_slice(),
+        ];
+
+        let header = hex_to_bytes("11223344556677889900aabbccddeeff");
+        let secret_key_bytes =
+            hex_to_bytes("2eee0f60a8a3a8bec0ee942bfd46cbdae9a0738ee68f5a64e7238311cf09a079");
+        let secret_key = Scalar::deserialize(&secret_key_bytes);
+
+        let public_key_bytes = hex_to_bytes(
+            "\
+                    92d37d1d6cd38fea3a873953333eab23a4c0377e3e049974eb62bd45949cdeb1\
+                    8fb0490edcd4429adff56e65cbce42cf188b31bddbd619e419b99c2c41b38179\
+                    eb001963bc3decaae0d9f702c7a8c004f207f46c734a5eae2e8e82833f3e7ea5",
+        );
+
+        let commitment_with_proof = hex_to_bytes(
+            "\
+            990c1837a8af86843213e5b12fbfc962efcaf8fd0e5812a6237b91b00a47b5a3\
+            4714a60b4c365f72b47a4d9b656dde4753a18a8286aca2bf58e8bb9a3d77a3e0\
+            052aefc427e5e47b666255e53cfcaa7d34d36adc13da01798b8eb041652a57c3\
+            b595ace54ed5eee43370c1697eb5ce996020d88ca5d811c011cde10c6c07dc2f\
+            4acbc89bd5652414d5b8823a250ed40b",
+        );
+
+        let (signature, entropy) = blind_sign_with_nym(
+            &secret_key,
+            &public_key_bytes,
+            Some(&commitment_with_proof),
+            Some(&header),
+            Some(&messages),
+            &cipher,
+        );
+
+        let verification_res = blind_verify_with_nym(
+            &public_key_bytes,
+            &signature,
+            Some(&header),
+            Some(&messages),
+            None,
+            Some(&prover_nym),
+            Some(&entropy),
+            Some(&prover_blindness),
+            &cipher,
+        );
+
+        assert!(verification_res.is_some());
     }
 
     #[test]
@@ -2381,5 +2748,129 @@ mod tests {
         );
 
         assert!(verification_result);
+    }
+
+    #[test]
+    fn sha_256_pseudonym_commit_pid_message_with_proof() {
+        let cipher = BLS12_381_G1_XMD_SHA_256;
+        let api_id = [cipher.id, PADDING_API_ID, PADDING_PSEUDONYM].concat();
+        let committed_messages: Vec<&[u8]> = vec![];
+
+        let prover_nym_bytes =
+            hex_to_bytes("6830ea571e9fca0194d9ebd5c571369d8b81655afe0bbb9c6f5efe934f699418");
+        let prover_nym = Scalar::deserialize(&prover_nym_bytes);
+
+        let (commitment_with_proof, prover_blind) = blind_messages_with_nym(
+            Some(&committed_messages),
+            Some(&prover_nym),
+            Some(&api_id),
+            &cipher,
+            Some(|count: usize| -> Vec<Scalar> {
+                seeded_random_scalars(
+                    b"3.141592653589793238462643383279",
+                    b"BBS_BLS12381G1_XMD:SHA-256_SSWU_RO_H2G_HM2S_COMMIT_MOCK_RANDOM_SCALARS_DST_",
+                    count,
+                    &BLS12_381_G1_XMD_SHA_256,
+                )
+            }),
+        );
+
+        assert_eq!(
+            prover_blind.to_string(),
+            "0x3ba0a2583bc7229fa9f2ae3a6697091032947c3a48f302b7fd2b08ca9d193041"
+        );
+
+        assert_eq!(
+            bytes_to_hex(&commitment_with_proof.serialize()),
+            "\
+                b989fc492e2047f602504eb3e236c0acb04224c77ad0d4cbd31c887b9eb05a1f\
+                27d7acfb266fe0ae062914bfa060984c5c2ac3247080eb71fefc7e9622ffae37\
+                2425a699a298ba991a0bc5c6a3d9211347d0ce98d5c0550667269df1fb81f8fa\
+                30c07d4917c7c0786411ee5c05b00b9d501d3f8e244b860b7b11140cddc9787a\
+                3ab54ec7fd0a8950dae339f396f2641b"
+        );
+    }
+
+    #[test]
+    fn sha_256_pseudonym_hidden_pid_valid_all_message_signature() {
+        let cipher = BLS12_381_G1_XMD_SHA_256;
+
+        let prover_nym_bytes =
+            hex_to_bytes("6830ea571e9fca0194d9ebd5c571369d8b81655afe0bbb9c6f5efe934f699418");
+        let prover_nym = Scalar::deserialize(&prover_nym_bytes);
+
+        let prover_blindness_bytes =
+            "3ba0a2583bc7229fa9f2ae3a6697091032947c3a48f302b7fd2b08ca9d193041";
+        let prover_blindness = Scalar::deserialize(&hex_to_bytes(prover_blindness_bytes));
+
+        let msg_1 =
+            hex_to_bytes("9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02");
+        let msg_2 =
+            hex_to_bytes("c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80");
+        let msg_3 = hex_to_bytes("7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73");
+        let msg_4 = hex_to_bytes("77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c");
+        let msg_5 = hex_to_bytes("496694774c5604ab1b2544eababcf0f53278ff50");
+        let msg_6 = hex_to_bytes("515ae153e22aae04ad16f759e07237b4");
+        let msg_7 = hex_to_bytes("d183ddc6e2665aa4e2f088af");
+        let msg_8 = hex_to_bytes("ac55fb33a75909ed");
+        let msg_9 = hex_to_bytes("96012096");
+        let msg_10 = hex_to_bytes("");
+
+        let messages = &vec![
+            msg_1.as_slice(),
+            msg_2.as_slice(),
+            msg_3.as_slice(),
+            msg_4.as_slice(),
+            msg_5.as_slice(),
+            msg_6.as_slice(),
+            msg_7.as_slice(),
+            msg_8.as_slice(),
+            msg_9.as_slice(),
+            msg_10.as_slice(),
+        ];
+
+        let header = hex_to_bytes("11223344556677889900aabbccddeeff");
+        let secret_key_bytes =
+            hex_to_bytes("60e55110f76883a13d030b2f6bd11883422d5abde717569fc0731f51237169fc");
+        let secret_key = Scalar::deserialize(&secret_key_bytes);
+
+        let public_key_bytes = hex_to_bytes(
+            "\
+                    a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28\
+                    51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f\
+                    1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c",
+        );
+
+        let commitment_with_proof = hex_to_bytes(
+            "\
+            b989fc492e2047f602504eb3e236c0acb04224c77ad0d4cbd31c887b9eb05a1f\
+            27d7acfb266fe0ae062914bfa060984c5c2ac3247080eb71fefc7e9622ffae37\
+            2425a699a298ba991a0bc5c6a3d9211347d0ce98d5c0550667269df1fb81f8fa\
+            30c07d4917c7c0786411ee5c05b00b9d501d3f8e244b860b7b11140cddc9787a\
+            3ab54ec7fd0a8950dae339f396f2641b",
+        );
+
+        let (signature, entropy) = blind_sign_with_nym(
+            &secret_key,
+            &public_key_bytes,
+            Some(&commitment_with_proof),
+            Some(&header),
+            Some(&messages),
+            &cipher,
+        );
+
+        let verification_res = blind_verify_with_nym(
+            &public_key_bytes,
+            &signature,
+            Some(&header),
+            Some(&messages),
+            None,
+            Some(&prover_nym),
+            Some(&entropy),
+            Some(&prover_blindness),
+            &cipher,
+        );
+
+        assert!(verification_res.is_some());
     }
 }

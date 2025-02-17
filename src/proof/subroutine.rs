@@ -440,6 +440,89 @@ pub(super) fn calculate_challenge(
     hash_to_scalar(&c_octets, &hash_to_scalar_dst, &cipher)
 }
 
+/// Initialize the proof with pseudonym generation and return one of the inputs passed to the challenge calculation
+/// operation.
+///
+/// - `context_id`: an octet string representing the context identifier.
+/// - `nym_secret`: a scalar representing the pseudonym secret.
+/// - `random_scalar`: a random scalar.
+/// - `api_id`: an octet string representing the API identifier.
+///
+/// Return a pseudonym proof.
+pub(super) fn initialize_proof_with_nym(
+    context_id: &[u8],
+    nym_secret: &Scalar,
+    random_scalar: &Scalar,
+    api_id: Option<&[u8]>,
+    cipher: &Cipher,
+) -> PseudonymProof {
+    let default_api_id = vec![];
+    let api_id = api_id.unwrap_or(&default_api_id);
+
+    // Procedure:
+    //
+    // 1. OP := hash_to_scalar_g1(context_id, api_id).
+    // 2. Pseudonym := OP * nym_secret.
+    // 3. Ut := OP * random_scalar.
+    // 4. If Pseudonym == Identity_G1, or Ut == Identity_G1, return INVALID.
+    // 5. Return (Pseudonym, OP, Ut).
+
+    let op = (cipher.hash_to_curve)(&context_id, &api_id);
+    let pseudonym = op * nym_secret;
+    let ut = op * random_scalar;
+
+    if pseudonym == G1Projective::identity() || ut == G1Projective::identity() {
+        panic!("the pseudonym and the random scalar must not be the identity element");
+    }
+
+    PseudonymProof {
+        pseudonym: pseudonym.into(),
+        op: op.into(),
+        ut: ut.into(),
+    }
+}
+
+/// Verify the pseudonym and return the serialized proof.
+///
+/// - `pseudonym`: the pseudonym to be verified, an element of the G1 group.
+/// - `context_id`: an octet string representing the context identifier.
+/// - `nym_secret_commitment`: a scalar representing the pseudonym secret commitment.
+/// - `proof_challenge`: a scalar representing the proof challenge.
+/// - `api_id`: an octet string representing the API identifier.
+/// - `cipher`: a cipher suite.
+///
+/// Return a pseudonym proof.
+pub(super) fn verify_nym_proof(
+    pseudonym: &G1Affine,
+    context_id: &[u8],
+    nym_secret_commitment: &Scalar,
+    proof_challenge: &Scalar,
+    api_id: Option<&[u8]>,
+    cipher: &Cipher,
+) -> PseudonymProof {
+    let default_api_id = vec![];
+    let api_id = api_id.unwrap_or(&default_api_id);
+
+    // Procedure:
+    //
+    // 1. OP := hash_to_scalar_g1(context_id, api_id).
+    // 2. Uv := OP * nym_secret_commitment - Pseudonym * proof_challenge.
+    // 3. If Uv == Identity_G1, return INVALID.
+    // 4. Return (Pseudonym, OP, Uv).
+
+    let op = (cipher.hash_to_curve)(&context_id, &api_id);
+    let uv = op * nym_secret_commitment - pseudonym * proof_challenge;
+    if uv == G1Projective::identity() {
+        panic!("the pseudonym and the proof challenge must not be the identity element");
+    }
+
+    PseudonymProof {
+        pseudonym: pseudonym.clone(),
+        op: op.into(),
+        ut: uv.into(),
+    }
+}
+
 /// Calculate the challenge scalar used during proof with pseudonym generation and verification.
 ///
 /// - `init_res`: the output of the initialization operation.
@@ -451,7 +534,7 @@ pub(super) fn calculate_challenge(
 /// - `cipher`: a cipher suite.
 ///
 /// Return a scalar representing the challenge.
-pub(super) fn calculate_proof_with_pseudonym_challenge(
+pub(super) fn calculate_challenge_with_nym(
     init_res: &PreProof,
     pseudonym_init_res: &PseudonymProof,
     disclosed_messages: Option<&Vec<Scalar>>,

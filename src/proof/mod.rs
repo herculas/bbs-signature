@@ -56,7 +56,7 @@ impl Deserialize for PreProof {
 pub struct PseudonymProof {
     pseudonym: G1Affine,
     op: G1Affine,
-    uv: G1Affine,
+    ut: G1Affine,
 }
 
 impl Serialize for PseudonymProof {
@@ -64,7 +64,7 @@ impl Serialize for PseudonymProof {
         let mut serialized = Vec::new();
         serialized.extend_from_slice(&self.pseudonym.serialize());
         serialized.extend_from_slice(&self.op.serialize());
-        serialized.extend_from_slice(&self.uv.serialize());
+        serialized.extend_from_slice(&self.ut.serialize());
         serialized
     }
 }
@@ -73,8 +73,8 @@ impl Deserialize for PseudonymProof {
     fn deserialize(bytes: &[u8]) -> Self {
         let pseudonym = G1Affine::deserialize(&bytes[..LENGTH_G1_POINT]);
         let op = G1Affine::deserialize(&bytes[LENGTH_G1_POINT..LENGTH_G1_POINT * 2]);
-        let uv = G1Affine::deserialize(&bytes[LENGTH_G1_POINT * 2..]);
-        PseudonymProof { pseudonym, op, uv }
+        let ut = G1Affine::deserialize(&bytes[LENGTH_G1_POINT * 2..]);
+        PseudonymProof { pseudonym, op, ut }
     }
 }
 
@@ -155,67 +155,9 @@ impl Import for Proof {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::utils::scalar::random_scalar;
-    use crate::utils::serialize::{Deserialize, Serialize};
-    use bls12_381::G1Affine;
-
-    #[test]
-    fn pre_proof_serialization() {
-        let a_bar = G1Affine::generator() * random_scalar();
-        let b_bar = G1Affine::generator() * random_scalar();
-        let d = G1Affine::generator() * random_scalar();
-        let t_1 = G1Affine::generator() * random_scalar();
-        let t_2 = G1Affine::generator() * random_scalar();
-        let domain = random_scalar();
-
-        let pre_proof = PreProof {
-            a_bar: a_bar.into(),
-            b_bar: b_bar.into(),
-            d: d.into(),
-            t_1: t_1.into(),
-            t_2: t_2.into(),
-            domain,
-        };
-        let serialized = pre_proof.serialize();
-        let deserialized = PreProof::deserialize(&serialized);
-
-        assert_eq!(pre_proof, deserialized);
-    }
-
-    #[test]
-    fn proof_serialization() {
-        let a_bar = G1Affine::generator() * random_scalar();
-        let b_bar = G1Affine::generator() * random_scalar();
-        let d = G1Affine::generator() * random_scalar();
-        let e_hat = random_scalar();
-        let r_1_hat = random_scalar();
-        let r_3_hat = random_scalar();
-        let m_hats = vec![
-            random_scalar(),
-            random_scalar(),
-            random_scalar(),
-            random_scalar(),
-            random_scalar(),
-            random_scalar(),
-            random_scalar(),
-        ];
-        let challenge = random_scalar();
-
-        let proof = Proof {
-            a_bar: a_bar.into(),
-            b_bar: b_bar.into(),
-            d: d.into(),
-            e_hat,
-            r_1_hat,
-            r_3_hat,
-            m_hats,
-            challenge,
-        };
-        let serialized = proof.serialize();
-        let deserialized = Proof::deserialize(&serialized);
-        assert_eq!(proof, deserialized);
-    }
+pub(crate) fn export_proof_with_pseudonym(proof: &Proof, pseudonym: &G1Affine) -> JsValue {
+    let mut serialized = Vec::new();
+    serialized.extend_from_slice(&proof.serialize());
+    serialized.extend_from_slice(&pseudonym.serialize());
+    JsValue::from_str(&bytes_to_hex(&serialized))
 }

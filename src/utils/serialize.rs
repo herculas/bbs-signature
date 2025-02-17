@@ -109,6 +109,12 @@ impl Import for Scalar {
     }
 }
 
+impl Import for G1Affine {
+    fn import(source: &JsValue) -> Self {
+        G1Affine::deserialize(&hex_to_bytes(&source.as_string().unwrap()))
+    }
+}
+
 impl Import for Vec<u8> {
     fn import(source: &JsValue) -> Self {
         hex_to_bytes(&source.as_string().unwrap())
@@ -148,6 +154,13 @@ pub(crate) fn import_option_scalar(raw: &JsValue) -> Option<Scalar> {
     match raw.is_undefined() || raw.is_null() {
         true => None,
         false => Some(Scalar::import(&raw)),
+    }
+}
+
+pub(crate) fn import_option_g1_affine(raw: &JsValue) -> Option<G1Affine> {
+    match raw.is_undefined() || raw.is_null() {
+        true => None,
+        false => Some(G1Affine::import(&raw)),
     }
 }
 

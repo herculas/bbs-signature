@@ -16,7 +16,7 @@ use bls12_381::{G1Affine, G1Projective, Scalar};
 /// - `cipher`: a cipher suite.
 ///
 /// Return a tuple containing the commitment with proof encoded as an octet string, and a scalar value.
-pub(super) fn commit(
+pub(super) fn blind_commit(
     blind_generators: &Vec<G1Affine>,
     committed_messages: Option<&Vec<Scalar>>,
     api_id: Option<&[u8]>,
@@ -34,6 +34,7 @@ pub(super) fn commit(
     // 1. M := len(committed_messages).
     // 2. If len(blind_generators) != M + 1, return INVALID.
     // 3. (Q_2, J_1, ..., J_M) := blind_generators.
+
     let m = committed_messages.len();
     if blind_generators.len() != m + 1 {
         panic!("The length of the blind generators must be equal to the length of the committed messages plus one.");
@@ -103,7 +104,7 @@ pub(super) fn commit(
 /// - `cipher`: a cipher suite.
 ///
 /// Return `true` if the proof is correct, `false` otherwise.
-pub(super) fn commit_verify(
+pub(super) fn blind_commit_verify(
     commitment: &G1Affine,
     commitment_proof: &BlindProof,
     blind_generators: &Vec<G1Affine>,
@@ -255,7 +256,7 @@ pub(super) fn finalize_blind_sign(
 /// - `cipher`: a cipher suite.
 ///
 /// Return a point from the G1 group as the commitment.
-pub(super) fn deserialize_and_validate_commit(
+pub(super) fn deserialize_and_validate_blind_commit(
     commitment_with_proof: Option<&[u8]>,
     blind_generators: Option<&Vec<G1Affine>>,
     api_id: Option<&[u8]>,
@@ -289,7 +290,7 @@ pub(super) fn deserialize_and_validate_commit(
         panic!("The length of the commitment proof must be equal to the length of the blind generators plus one.");
     };
 
-    let validation_res = commit_verify(
+    let validation_res = blind_commit_verify(
         &commitment,
         &commitment_proof,
         blind_generators,

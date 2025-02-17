@@ -3,13 +3,13 @@ use super::Proof;
 use crate::signature::Signature;
 
 use crate::suite::cipher::Cipher;
-use crate::suite::constants::{PADDING_API_ID, PADDING_BLIND};
+use crate::suite::constants::{PADDING_API_ID, PADDING_BLIND, PADDING_PSEUDONYM};
 
 use crate::utils::blind::prepare_parameters;
 use crate::utils::generator::create_generators;
 use crate::utils::scalar::messages_to_scalars;
 
-use bls12_381::Scalar;
+use bls12_381::{G1Affine, Scalar};
 
 /// Create a BBS proof, which is a zero-knowledge proof-of-knowledge of a BBS Signature, while optionally disclosing any
 /// subset of the signed messages.
@@ -143,7 +143,7 @@ pub(crate) fn validate(
 
     let message_scalars = messages_to_scalars(disclosed_messages, Some(&api_id), cipher);
     let generators = create_generators(u + r + 1, Some(&api_id), cipher);
-    super::core::verify(
+    super::core::validate(
         public_key,
         proof,
         &generators,
@@ -396,9 +396,272 @@ pub fn blind_validate(
     disclosed_commitment_indexes.iter().for_each(|&j| {
         indexes.push(j + l + 1);
     });
-    super::core::verify(
+    super::core::validate(
         public_key,
         proof,
+        &generators,
+        header,
+        presentation_header,
+        Some(&message_scalars),
+        Some(&indexes),
+        Some(&api_id),
+        cipher,
+    )
+}
+
+/// Calculate a BBS proof with a pseudonym. The BBS proof is extended to include a zero-knowledge proof-of-correctness
+/// of the pseudonym value, i.e., that is correctly calculated using the undisclosed pseudonym secret, and that is
+/// "bound" to the underlying BBS signature (i.e., that the `nym_secret` value is signed by the signer).
+///
+/// Validating the proof guarantees the authenticity and integrity of the header, the presentation header, and disclosed
+/// messages, knowledge of a valid BBS signature as well as the correctness of the ownership of the pseudonym.
+///
+/// - `public_key`: an octet string representing the public key.
+/// - `signature`: a BBS Signature.
+/// - `header`: an octet string representing the signed header.
+/// - `presentation_header`: an octet string representing the presentation header.
+/// - `messages`: a list of octet strings representing the signed messages.
+/// - `disclosed_indexes`: a list of integers representing the indexes of disclosed messages.
+/// - `cipher`: a cipher suite.
+///
+/// Return a BBS proof.
+pub(crate) fn blind_prove_with_nym(
+    public_key: &[u8],
+    signature: &Signature,
+    header: Option<&[u8]>,
+    presentation_header: Option<&[u8]>,
+    nym_secret: Option<&Scalar>,
+    context_id: Option<&[u8]>,
+    messages: Option<&Vec<&[u8]>>,
+    committed_messages: Option<&Vec<&[u8]>>,
+    disclosed_indexes: Option<&Vec<usize>>,
+    disclosed_commitment_indexes: Option<&Vec<usize>>,
+    secret_prover_blind: Option<&Scalar>,
+    cipher: &Cipher,
+    random_scalar_sampler: Option<fn(usize) -> Vec<Scalar>>,
+) -> (Proof, G1Affine) {
+    let default_nym_secret = Scalar::zero();
+    let default_context_id = vec![];
+    let default_messages = vec![];
+    let default_committed_messages = vec![];
+    let default_disclosed_indexes = vec![];
+    let default_disclosed_commitment_indexes = vec![];
+    let default_secret_prover_blind = Scalar::zero();
+
+    let nym_secret = nym_secret.unwrap_or(&default_nym_secret);
+    let context_id = context_id.unwrap_or(&default_context_id);
+    let messages = messages.unwrap_or(&default_messages);
+    let committed_messages = committed_messages.unwrap_or(&default_committed_messages);
+    let disclosed_indexes = disclosed_indexes.unwrap_or(&default_disclosed_indexes);
+    let disclosed_commitment_indexes =
+        disclosed_commitment_indexes.unwrap_or(&default_disclosed_commitment_indexes);
+    let secret_prover_blind = secret_prover_blind.unwrap_or(&default_secret_prover_blind);
+
+    // Parameters:
+    //
+    // - api_id: an octet string "<cipher_suite_id> || H2G_HM2S_PSEUDONYM_".
+
+    let api_id = [cipher.id, PADDING_API_ID, PADDING_PSEUDONYM].concat();
+
+    // Deserialization:
+    //
+    // 1. L := len(messages).
+    // 2. M := len(committed_messages).
+    // 3. If len(disclosed_indexes) > L, return INVALID.
+    // 4. For i in disclosed_indexes, if i < 0 or i >= L, return INVALID.
+    // 5. If len(disclosed_commitment_indexes) > M, return INVALID.
+    // 6. For j in disclosed_commitment_indexes, if j < 0 or j >= M, return INVALID.
+
+    let l = messages.len();
+    let m = committed_messages.len();
+    if disclosed_indexes.len() > l {
+        panic!("Invalid disclosed indexes");
+    }
+    disclosed_indexes.iter().for_each(|&i| {
+        if i >= l {
+            panic!("Invalid disclosed indexes");
+        }
+    });
+    if disclosed_commitment_indexes.len() > m {
+        panic!("Invalid disclosed commitment indexes");
+    }
+    disclosed_commitment_indexes.iter().for_each(|&j| {
+        if j >= m {
+            panic!("Invalid disclosed commitment indexes");
+        }
+    });
+
+    // Procedure:
+    //
+    // 1. (message_scalars, generators) := prepare_parameters(
+    //          messages,
+    //          committed_messages,
+    //          L + 1,
+    //          M + 2,
+    //          secret_prover_blind,
+    //          api_id).
+    // 2. message_scalars.append(nym_secret).
+    // 3. indexes := ().
+    // 4. indexes.append(disclosed_indexes).
+    // 5. For j in disclosed_commitment_indexes: indexes.append(j + L + 1).
+    // 6. proof := core_prove_with_nym(
+    //          public_key,
+    //          signature,
+    //          generators,
+    //          header,
+    //          presentation_header,
+    //          context_id,
+    //          message_scalars,
+    //          indexes,
+    //          api_id).
+    // 6. Return proof.
+
+    let (message_scalars, generators) = prepare_parameters(
+        Some(&messages),
+        Some(&committed_messages),
+        l + 1,
+        m + 2,
+        Some(&secret_prover_blind),
+        Some(&api_id),
+        cipher,
+    );
+    let mut message_scalars = message_scalars;
+    message_scalars.push(nym_secret.clone());
+
+    let mut indexes: Vec<usize> = Vec::new();
+    indexes.extend(disclosed_indexes);
+    disclosed_commitment_indexes.iter().for_each(|&j| {
+        indexes.push(j + l + 1);
+    });
+
+    super::core::prove_with_nym(
+        public_key,
+        signature,
+        &context_id,
+        &generators,
+        header,
+        presentation_header,
+        Some(&message_scalars),
+        Some(&indexes),
+        Some(&api_id),
+        cipher,
+        random_scalar_sampler,
+    )
+}
+
+/// Validate a BBS proof with a pseudonym, given the signer's public key, the proof, the pseudonym, the context
+/// identifier that was used to create it, a header and presentation header, the disclosed messages and committed
+/// messages as well as the indexes those messages had in the original vectors of signed messages.
+///
+/// Validating the proof also validates the correctness and ownership by the prover of the received pseudonym.
+///
+/// - `public_key`: an octet string representing the public key.
+/// - `proof`: a BBS proof.
+/// - `header`: an octet string representing the signed header.
+/// - `presentation_header`: an octet string representing the presentation header.
+/// - `l`: an integer representing the total number of signed messages known by the signer.
+/// - `disclosed_messages`: a list of octet strings representing the disclosed messages.
+/// - `disclosed_commitment_messages`: a list of octet strings representing the disclosed commitment messages.
+/// - `disclosed_indexes`: a list of integers representing the indexes of disclosed messages.
+/// - `disclosed_commitment_indexes`: a list of integers representing the indexes of disclosed commitment messages.
+/// - `cipher`: a cipher suite.
+///
+/// Return `true` if the proof is valid, `false` otherwise.
+pub fn blind_validate_with_nym(
+    public_key: &[u8],
+    proof: &Proof,
+    header: Option<&[u8]>,
+    presentation_header: Option<&[u8]>,
+    pseudonym: Option<&G1Affine>,
+    context_id: Option<&[u8]>,
+    l: Option<usize>,
+    disclosed_messages: Option<&Vec<&[u8]>>,
+    disclosed_commitment_messages: Option<&Vec<&[u8]>>,
+    disclosed_indexes: Option<&Vec<usize>>,
+    disclosed_commitment_indexes: Option<&Vec<usize>>,
+    cipher: &Cipher,
+) -> bool {
+    let default_pseudonym = G1Affine::identity();
+    let default_context_id = vec![];
+    let default_disclosed_messages = vec![];
+    let default_disclosed_commitment_messages = vec![];
+    let default_disclosed_indexes = vec![];
+    let default_disclosed_commitment_indexes = vec![];
+
+    let pseudonym = pseudonym.unwrap_or(&default_pseudonym);
+    let context_id = context_id.unwrap_or(&default_context_id);
+    let disclosed_messages = disclosed_messages.unwrap_or(&default_disclosed_messages);
+    let disclosed_commitment_messages =
+        disclosed_commitment_messages.unwrap_or(&default_disclosed_commitment_messages);
+    let disclosed_indexes = disclosed_indexes.unwrap_or(&default_disclosed_indexes);
+    let disclosed_commitment_indexes =
+        disclosed_commitment_indexes.unwrap_or(&default_disclosed_commitment_indexes);
+
+    let l = l.unwrap_or(0);
+
+    // Parameters:
+    //
+    // - api_id: an octet string "<cipher_suite_id> || H2G_HM2S_PSEUDONYM_".
+
+    let api_id = [cipher.id, PADDING_API_ID, PADDING_PSEUDONYM].concat();
+
+    // Deserialization:
+    //
+    // 1. proof_len_floor := 2 * octet_point_length + 3 * octet_scalar_length.
+    // 2. If len(proof) < proof_len_floor, return INVALID.
+    // 3. U := floor((len(proof) - proof_len_floor) / octet_scalar_length).
+    // 4. total_no_messages := len(disclosed_indexes) + len(disclosed_commitment_indexes) + U.
+    // 5. M := total_no_messages - L.
+
+    let u = proof.m_hats.len();
+    let total_no_messages = disclosed_indexes.len() + disclosed_commitment_indexes.len() + u;
+    let m = total_no_messages - l;
+
+    // Procedure:
+    //
+    // 1. (message_scalars, generators) := prepare_parameters(
+    //          disclosed_messages,
+    //          disclosed_commitment_messages,
+    //          L + 1,
+    //          M,
+    //          None,
+    //          api_id).
+    // 2. indexes := ().
+    // 3. indexes.append(disclosed_indexes).
+    // 4. For j in disclosed_commitment_indexes: indexes.append(j + L + 1).
+    // 5. result := core_proof_verify_with_pseudonym(
+    //          public_key,
+    //          proof,
+    //          pseudonym,
+    //          context_id,
+    //          generators,
+    //          header,
+    //          presentation_header,
+    //          message_scalars,
+    //          indexes,
+    //          api_id).
+    // 6. Return result.
+
+    let (message_scalars, generators) = prepare_parameters(
+        Some(&disclosed_messages),
+        Some(&disclosed_commitment_messages),
+        l + 1,
+        m,
+        None,
+        Some(&api_id),
+        cipher,
+    );
+    let mut indexes: Vec<usize> = Vec::new();
+    indexes.extend(disclosed_indexes);
+    disclosed_commitment_indexes.iter().for_each(|&j| {
+        indexes.push(j + l + 1);
+    });
+
+    super::core::validate_with_nym(
+        public_key,
+        proof,
+        &pseudonym,
+        &context_id,
         &generators,
         header,
         presentation_header,
@@ -2322,6 +2585,140 @@ mod tests {
     }
 
     #[test]
+    fn shake_256_pseudonym_valid_multi_message_signature_multiple_messages_revealed() {
+        let cipher = BLS12_381_G1_XOF_SHAKE_256;
+
+        let public_key_bytes = hex_to_bytes(
+            "\
+                    92d37d1d6cd38fea3a873953333eab23a4c0377e3e049974eb62bd45949cdeb1\
+                    8fb0490edcd4429adff56e65cbce42cf188b31bddbd619e419b99c2c41b38179\
+                    eb001963bc3decaae0d9f702c7a8c004f207f46c734a5eae2e8e82833f3e7ea5",
+        );
+
+        let header = hex_to_bytes("11223344556677889900aabbccddeeff");
+        let presentation_header =
+            hex_to_bytes("bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501");
+
+        let message_0 =
+            hex_to_bytes("9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02");
+        let message_1 =
+            hex_to_bytes("c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80");
+        let message_2 = hex_to_bytes("7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73");
+        let message_3 = hex_to_bytes("77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c");
+        let message_4 = hex_to_bytes("496694774c5604ab1b2544eababcf0f53278ff50");
+        let message_5 = hex_to_bytes("515ae153e22aae04ad16f759e07237b4");
+        let message_6 = hex_to_bytes("d183ddc6e2665aa4e2f088af");
+        let message_7 = hex_to_bytes("ac55fb33a75909ed");
+        let message_8 = hex_to_bytes("96012096");
+        let message_9 = hex_to_bytes("");
+
+        let messages = &vec![
+            message_0.as_slice(),
+            message_1.as_slice(),
+            message_2.as_slice(),
+            message_3.as_slice(),
+            message_4.as_slice(),
+            message_5.as_slice(),
+            message_6.as_slice(),
+            message_7.as_slice(),
+            message_8.as_slice(),
+            message_9.as_slice(),
+        ];
+
+        let disclosed_indexes = vec![0, 2, 4, 6];
+
+        let signature_bytes = hex_to_bytes(
+            "\
+                    a47d3c15559d8d54026edc989974057410d65a99e3172420bee8fcd1cf39f96f\
+                    41662f3a5a2cc0d2394e130304eab9fe57aa3941a746616123ee492455f69e43\
+                    af0a64a9bebd1d144f570d879d88fc37",
+        );
+
+        let prover_nym_bytes =
+            hex_to_bytes("3183d923c36e56a823ea4ae0de4287ca87ff06e5785a57268b39a5fa0269bbdc");
+        let prover_nym = Scalar::deserialize(&prover_nym_bytes);
+        let prover_blindness_bytes =
+            "643a0c0bc86a50e0d8c00bfe6c8debd85373597e1aef6cc912838bf7dc376e48";
+        let prover_blindness = Scalar::deserialize(&hex_to_bytes(prover_blindness_bytes));
+
+        let context_id =
+            hex_to_bytes("bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a");
+
+        let (proof, pseudonym) = blind_prove_with_nym(
+            &public_key_bytes,
+            &Signature::deserialize(&signature_bytes),
+            Some(&header),
+            Some(&presentation_header),
+            Some(&prover_nym),
+            Some(&context_id),
+            Some(&messages),
+            None,
+            Some(&disclosed_indexes),
+            None,
+            Some(&prover_blindness),
+            &cipher,
+            Some(|count: usize| -> Vec<Scalar> {
+                seeded_random_scalars(
+                    b"3.141592653589793238462643383279",
+                    b"BBS_BLS12381G1_XMD:SHAKE-256_SSWU_RO_H2G_HM2S_PROOF_MOCK_RANDOM_SCALARS_DST_",
+                    count,
+                    &BLS12_381_G1_XOF_SHAKE_256,
+                )
+            }),
+        );
+
+        assert_eq!(
+            bytes_to_hex(&proof.serialize()),
+            "\
+                b8a47bd14feae2f1bc746ff4dd2387e5273e26949e4b7cd210d2d29e8ed63071\
+                dfd90ab8e6ad19225e43d6411b2164a986033b46e66c1f6f742fc6b2eb143096\
+                065750a9f8540e6d10708f7a4d7b4cb597301e7d5943007ed048987be5f9700b\
+                8132f9497aec97b4b702c46db30264db9eeb2b6b52c2a0eef4f581829cddf743\
+                f7ccf11420fd0862d4ee8f1ccc351b4925c4e13ce7648ddab1cddd771fbf9a69\
+                f921e545f95c2e59f616f8fe01315c6f40f39cd692e72e7351f47b3a42758ae3\
+                24f381f3ee0310c87261ad935ecff40a0b92fcbea9904e47044cc45dfdb94383\
+                3a4892aa512970c6049d66a50660cc306abd11d7808c9f5151093d1f4ba5f006\
+                7c6b919329c2d27554cfc8ccbaea6cb01d2db44702e3b1825b2e881258ca2e7d\
+                f93a34adfe68b27653fe0ee20f68e94e511fa2dd8eebaa671f9889756af9cbcc\
+                a926eaa8b280a264a86f36a3bf86661229d51ea1d3879782513b41ba871e145c\
+                dd998ba6a16b5a2a78762c26c80a9167017470b7c4f70c81d946398b0d7a3e49\
+                1fe7f137bc20ac520e25b87c629c234e11fec3aef75a5b090c349e0c3eb3ed0e\
+                ef4891e7c6f1239b4a158c9b5d160c1a0a0daf0df9b37eeb63e48fdd161c6678\
+                1b9570d728b461207d5a5d6e1b0881546b9cfb7c986e13b5b82695819e6ae67f\
+                eb47c136388b034a50c59f00ee4113a7543b2f0de2b998999f0e831fa739472b\
+                bf5758d49615f2c711de965e59d2b55e",
+        );
+
+        assert_eq!(
+            bytes_to_hex(&pseudonym.serialize()),
+            "8ef7b8516387badcdf24eda35553031d01c392b93fb943445ae90979d7285d877ba6509cec3a3520f46128e97ecbd136",
+        );
+
+        let disclosed_messages = messages
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| disclosed_indexes.contains(i))
+            .map(|(_, m)| *m)
+            .collect::<Vec<_>>();
+
+        let validation_result = blind_validate_with_nym(
+            &public_key_bytes,
+            &proof,
+            Some(&header),
+            Some(&presentation_header),
+            Some(&pseudonym),
+            Some(&context_id),
+            Some(10),
+            Some(&disclosed_messages),
+            None,
+            Some(&disclosed_indexes),
+            None,
+            &cipher,
+        );
+        assert!(validation_result);
+    }
+
+    #[test]
     fn sha_256_single_message() {
         let header = hex_to_bytes("11223344556677889900aabbccddeeff");
         let presentation_header =
@@ -4200,6 +4597,141 @@ mod tests {
             &proof,
             Some(&header),
             Some(&presentation_header),
+            Some(10),
+            Some(&disclosed_messages),
+            None,
+            Some(&disclosed_indexes),
+            None,
+            &cipher,
+        );
+
+        assert!(validation_result);
+    }
+
+    #[test]
+    fn sha_256_pseudonym_valid_multi_message_signature_multiple_messages_revealed() {
+        let cipher = BLS12_381_G1_XMD_SHA_256;
+
+        let public_key_bytes = hex_to_bytes(
+            "\
+                    a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28\
+                    51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f\
+                    1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c",
+        );
+
+        let header = hex_to_bytes("11223344556677889900aabbccddeeff");
+        let presentation_header =
+            hex_to_bytes("bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501");
+
+        let message_0 =
+            hex_to_bytes("9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02");
+        let message_1 =
+            hex_to_bytes("c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80");
+        let message_2 = hex_to_bytes("7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73");
+        let message_3 = hex_to_bytes("77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c");
+        let message_4 = hex_to_bytes("496694774c5604ab1b2544eababcf0f53278ff50");
+        let message_5 = hex_to_bytes("515ae153e22aae04ad16f759e07237b4");
+        let message_6 = hex_to_bytes("d183ddc6e2665aa4e2f088af");
+        let message_7 = hex_to_bytes("ac55fb33a75909ed");
+        let message_8 = hex_to_bytes("96012096");
+        let message_9 = hex_to_bytes("");
+
+        let messages = &vec![
+            message_0.as_slice(),
+            message_1.as_slice(),
+            message_2.as_slice(),
+            message_3.as_slice(),
+            message_4.as_slice(),
+            message_5.as_slice(),
+            message_6.as_slice(),
+            message_7.as_slice(),
+            message_8.as_slice(),
+            message_9.as_slice(),
+        ];
+
+        let disclosed_indexes = vec![0, 2, 4, 6];
+
+        let signature_bytes = hex_to_bytes(
+            "\
+                    a8c362043de23de5331483e510aafca643d7d1ace1b50003f4cc0eb250868531\
+                    d401e0d3af8a35dc596ef209f41b4f6f28f5c63f8a096e2a3072633fa624872c\
+                    3f6f41fb5121b354ad7d0c0ea07e0f2f",
+        );
+
+        let prover_nym_bytes =
+            hex_to_bytes("3183d923c36e56a823ea4ae0de4287ca87ff06e5785a57268b39a5fa0269bbdc");
+        let prover_nym = Scalar::deserialize(&prover_nym_bytes);
+        let prover_blindness_bytes =
+            "3ba0a2583bc7229fa9f2ae3a6697091032947c3a48f302b7fd2b08ca9d193041";
+        let prover_blindness = Scalar::deserialize(&hex_to_bytes(prover_blindness_bytes));
+
+        let context_id =
+            hex_to_bytes("bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a");
+
+        let (proof, pseudonym) = blind_prove_with_nym(
+            &public_key_bytes,
+            &Signature::deserialize(&signature_bytes),
+            Some(&header),
+            Some(&presentation_header),
+            Some(&prover_nym),
+            Some(&context_id),
+            Some(&messages),
+            None,
+            Some(&disclosed_indexes),
+            None,
+            Some(&prover_blindness),
+            &cipher,
+            Some(|count: usize| -> Vec<Scalar> {
+                seeded_random_scalars(
+                    b"3.141592653589793238462643383279",
+                    b"BBS_BLS12381G1_XMD:SHA-256_SSWU_RO_H2G_HM2S_PROOF_MOCK_RANDOM_SCALARS_DST_",
+                    count,
+                    &BLS12_381_G1_XMD_SHA_256,
+                )
+            }),
+        );
+
+        assert_eq!(
+            bytes_to_hex(&proof.serialize()),
+            "\
+                946a2bc023f7d61df5c5388e8de8ac2e9f8b82b7a805f5c62219218d7e244273\
+                de522071400926156be84f1068f9df8ab88603b0e788bbc77e092f1032b51907\
+                382d45a9218510bb3781fbc0efd11cda578b7d033e06f30ab8bcae2fda40ad82\
+                b3d3138f88d9db618cd2bd60b426f9ab4324ed1419bbaa002caf874dc50848ba\
+                ead7ee68eac595c5a85d5cbcd779abaf3acde6179b19988868f5b5692077355f\
+                1ba124f4a396155e0f93deb795e0cc46361d67add9e90b80d5df07d44be87b4f\
+                8fc476e4be626f009df205c625eb213d5b40d3967ec48a9e502ae10264f025be\
+                9376edd480cb9ceee455b1ddd05de6c01f7a9465a06b88cde40a54d45b7a9837\
+                0b5468d18d9b5cd8b37b9b655cb7b4961e6614b17480a53179f15c8e759464ee\
+                4334d4a51128d009433ec4bb9595be3c29138446fbe914e3098b6ad942af6a3a\
+                e29514f81455020b1c47b30a1b0a1181009ffede19502c3eedea3a22da529368\
+                c8c5bec4660294db55da273dffcbfad76005c41d169da330e76f3d261ceb585f\
+                648b0b851369f5d6a2917ecebab8f166421da2e68de466929965758b1ce68bf2\
+                f655bc4b97dc5f358e8e9f83ae23e93a4e8e0df05f27d6e132de521c32a31626\
+                7403aa4f7551fcc6ab94cb5dd4e308d6324468cdcc6e7a7ebf213aea0a380d6a\
+                dca5d0d06b2b5d2f5426295a78f39c1625a23d5661739b2c86ef5706d94ea55d\
+                1d235127e6284811f51c51fa677e0e51",
+        );
+
+        assert_eq!(
+            bytes_to_hex(&pseudonym.serialize()),
+            "b04bd002c85e31d2735ee2e6b36aea85147cbf197934f99ae26a7da73b98ebc34561848426aded0967e07fb333f79487",
+        );
+
+        let disclosed_messages = messages
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| disclosed_indexes.contains(i))
+            .map(|(_, m)| *m)
+            .collect::<Vec<_>>();
+
+        let validation_result = blind_validate_with_nym(
+            &public_key_bytes,
+            &proof,
+            Some(&header),
+            Some(&presentation_header),
+            Some(&pseudonym),
+            Some(&context_id),
             Some(10),
             Some(&disclosed_messages),
             None,
