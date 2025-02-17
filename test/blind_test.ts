@@ -1,10 +1,10 @@
 import { assert } from "@std/assert"
 
-import { blindMessages, blindProve, blindSign, blindValidate, blindVerify } from "../lib/api/blind.ts"
-import { Cipher } from "../lib/constant/cipher.ts"
+import * as blind from "../lib/blind.ts"
+import * as CONSTANT from "../lib/constants.ts"
 
 Deno.test("Shake-256 signature for blind no prover committed messages, no signer messages", () => {
-  const cipher = Cipher.XOF_SHAKE_256
+  const cipher = CONSTANT.Cipher.XOF_SHAKE_256
   const header = "11223344556677889900aabbccddeeff"
 
   const secretKey = "2eee0f60a8a3a8bec0ee942bfd46cbdae9a0738ee68f5a64e7238311cf09a079"
@@ -15,16 +15,16 @@ Deno.test("Shake-256 signature for blind no prover committed messages, no signer
   const messages = new Array<string>()
   const committedMessages = new Array<string>()
 
-  const { commitmentWithProof, proverBlindness } = blindMessages(committedMessages, cipher)
+  const { commitmentWithProof, proverBlindness } = blind.commit(committedMessages, cipher)
 
-  const signature = blindSign(secretKey, publicKey, commitmentWithProof, header, messages, cipher)
-  const result = blindVerify(publicKey, signature, header, messages, committedMessages, proverBlindness, cipher)
+  const signature = blind.sign(secretKey, publicKey, commitmentWithProof, header, messages, cipher)
+  const result = blind.verify(publicKey, signature, header, messages, committedMessages, proverBlindness, cipher)
 
   assert(result)
 })
 
 Deno.test("Shake-256 signature for blind multiple prover committed messages, no signer messages", () => {
-  const cipher = Cipher.XOF_SHAKE_256
+  const cipher = CONSTANT.Cipher.XOF_SHAKE_256
   const header = "11223344556677889900aabbccddeeff"
 
   const secretKey = "2eee0f60a8a3a8bec0ee942bfd46cbdae9a0738ee68f5a64e7238311cf09a079"
@@ -47,16 +47,16 @@ Deno.test("Shake-256 signature for blind multiple prover committed messages, no 
     committedMessage4,
   ]
 
-  const { commitmentWithProof, proverBlindness } = blindMessages(committedMessages, cipher)
+  const { commitmentWithProof, proverBlindness } = blind.commit(committedMessages, cipher)
 
-  const signature = blindSign(secretKey, publicKey, commitmentWithProof, header, messages, cipher)
-  const result = blindVerify(publicKey, signature, header, messages, committedMessages, proverBlindness, cipher)
+  const signature = blind.sign(secretKey, publicKey, commitmentWithProof, header, messages, cipher)
+  const result = blind.verify(publicKey, signature, header, messages, committedMessages, proverBlindness, cipher)
 
   assert(result)
 })
 
 Deno.test("Shake-256 signature for blind no prover committed messages, multiple signer messages", () => {
-  const cipher = Cipher.XOF_SHAKE_256
+  const cipher = CONSTANT.Cipher.XOF_SHAKE_256
   const header = "11223344556677889900aabbccddeeff"
 
   const secretKey = "2eee0f60a8a3a8bec0ee942bfd46cbdae9a0738ee68f5a64e7238311cf09a079"
@@ -89,16 +89,16 @@ Deno.test("Shake-256 signature for blind no prover committed messages, multiple 
   ]
   const committedMessages = new Array<string>()
 
-  const { commitmentWithProof, proverBlindness } = blindMessages(committedMessages, cipher)
+  const { commitmentWithProof, proverBlindness } = blind.commit(committedMessages, cipher)
 
-  const signature = blindSign(secretKey, publicKey, commitmentWithProof, header, messages, cipher)
-  const result = blindVerify(publicKey, signature, header, messages, committedMessages, proverBlindness, cipher)
+  const signature = blind.sign(secretKey, publicKey, commitmentWithProof, header, messages, cipher)
+  const result = blind.verify(publicKey, signature, header, messages, committedMessages, proverBlindness, cipher)
 
   assert(result)
 })
 
 Deno.test("Shake-256 signature for blind multiple prover committed messages, multiple signer messages", () => {
-  const cipher = Cipher.XOF_SHAKE_256
+  const cipher = CONSTANT.Cipher.XOF_SHAKE_256
   const header = "11223344556677889900aabbccddeeff"
 
   const secretKey = "2eee0f60a8a3a8bec0ee942bfd46cbdae9a0738ee68f5a64e7238311cf09a079"
@@ -143,16 +143,16 @@ Deno.test("Shake-256 signature for blind multiple prover committed messages, mul
     committedMessage4,
   ]
 
-  const { commitmentWithProof, proverBlindness } = blindMessages(committedMessages, cipher)
+  const { commitmentWithProof, proverBlindness } = blind.commit(committedMessages, cipher)
 
-  const signature = blindSign(secretKey, publicKey, commitmentWithProof, header, messages, cipher)
-  const result = blindVerify(publicKey, signature, header, messages, committedMessages, proverBlindness, cipher)
+  const signature = blind.sign(secretKey, publicKey, commitmentWithProof, header, messages, cipher)
+  const result = blind.verify(publicKey, signature, header, messages, committedMessages, proverBlindness, cipher)
 
   assert(result)
 })
 
 Deno.test("Shake-256 signature for blind undefined prover committed messages, multiple signer messages", () => {
-  const cipher = Cipher.XOF_SHAKE_256
+  const cipher = CONSTANT.Cipher.XOF_SHAKE_256
   const header = "11223344556677889900aabbccddeeff"
 
   const secretKey = "2eee0f60a8a3a8bec0ee942bfd46cbdae9a0738ee68f5a64e7238311cf09a079"
@@ -184,14 +184,14 @@ Deno.test("Shake-256 signature for blind undefined prover committed messages, mu
     message9,
   ]
 
-  const signature = blindSign(secretKey, publicKey, undefined, header, messages, cipher)
-  const result = blindVerify(publicKey, signature, header, messages, undefined, undefined, cipher)
+  const signature = blind.sign(secretKey, publicKey, undefined, header, messages, cipher)
+  const result = blind.verify(publicKey, signature, header, messages, undefined, undefined, cipher)
 
   assert(result)
 })
 
 Deno.test("Shake-256 proof for all prover committed messages and signer messages revealed", () => {
-  const cipher = Cipher.XOF_SHAKE_256
+  const cipher = CONSTANT.Cipher.XOF_SHAKE_256
   const header = "11223344556677889900aabbccddeeff"
   const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
 
@@ -248,7 +248,7 @@ Deno.test("Shake-256 proof for all prover committed messages and signer messages
     "5ab02449b8d375f869a8df15db78eb02"
   const proverBlindness = "41fb2f74c30256398c927a262602b5ac3ebc6f84d9169476f8fcb1525c93b649"
 
-  const proof = blindProve(
+  const proof = blind.prove(
     publicKey,
     signature,
     header,
@@ -261,7 +261,7 @@ Deno.test("Shake-256 proof for all prover committed messages and signer messages
     cipher,
   )
 
-  const result = blindValidate(
+  const result = blind.validate(
     publicKey,
     proof,
     header,
@@ -278,7 +278,7 @@ Deno.test("Shake-256 proof for all prover committed messages and signer messages
 })
 
 Deno.test("Shake-256 proof for half prover committed messages and all signer messages revealed", () => {
-  const cipher = Cipher.XOF_SHAKE_256
+  const cipher = CONSTANT.Cipher.XOF_SHAKE_256
 
   const header = "11223344556677889900aabbccddeeff"
   const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
@@ -336,7 +336,7 @@ Deno.test("Shake-256 proof for half prover committed messages and all signer mes
     "5ab02449b8d375f869a8df15db78eb02"
   const proverBlindness = "41fb2f74c30256398c927a262602b5ac3ebc6f84d9169476f8fcb1525c93b649"
 
-  const proof = blindProve(
+  const proof = blind.prove(
     publicKey,
     signature,
     header,
@@ -349,7 +349,7 @@ Deno.test("Shake-256 proof for half prover committed messages and all signer mes
     cipher,
   )
 
-  const result = blindValidate(
+  const result = blind.validate(
     publicKey,
     proof,
     header,
@@ -366,7 +366,7 @@ Deno.test("Shake-256 proof for half prover committed messages and all signer mes
 })
 
 Deno.test("Shake-256 proof for all prover committed messages and half signer messages revealed", () => {
-  const cipher = Cipher.XOF_SHAKE_256
+  const cipher = CONSTANT.Cipher.XOF_SHAKE_256
 
   const header = "11223344556677889900aabbccddeeff"
   const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
@@ -424,7 +424,7 @@ Deno.test("Shake-256 proof for all prover committed messages and half signer mes
     "5ab02449b8d375f869a8df15db78eb02"
   const proverBlindness = "41fb2f74c30256398c927a262602b5ac3ebc6f84d9169476f8fcb1525c93b649"
 
-  const proof = blindProve(
+  const proof = blind.prove(
     publicKey,
     signature,
     header,
@@ -437,7 +437,7 @@ Deno.test("Shake-256 proof for all prover committed messages and half signer mes
     cipher,
   )
 
-  const result = blindValidate(
+  const result = blind.validate(
     publicKey,
     proof,
     header,
@@ -454,7 +454,7 @@ Deno.test("Shake-256 proof for all prover committed messages and half signer mes
 })
 
 Deno.test("Shake-256 proof for half prover committed messages and half signer messages revealed", () => {
-  const cipher = Cipher.XOF_SHAKE_256
+  const cipher = CONSTANT.Cipher.XOF_SHAKE_256
 
   const header = "11223344556677889900aabbccddeeff"
   const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
@@ -512,7 +512,7 @@ Deno.test("Shake-256 proof for half prover committed messages and half signer me
     "5ab02449b8d375f869a8df15db78eb02"
   const proverBlindness = "41fb2f74c30256398c927a262602b5ac3ebc6f84d9169476f8fcb1525c93b649"
 
-  const proof = blindProve(
+  const proof = blind.prove(
     publicKey,
     signature,
     header,
@@ -525,7 +525,7 @@ Deno.test("Shake-256 proof for half prover committed messages and half signer me
     cipher,
   )
 
-  const result = blindValidate(
+  const result = blind.validate(
     publicKey,
     proof,
     header,
@@ -542,7 +542,7 @@ Deno.test("Shake-256 proof for half prover committed messages and half signer me
 })
 
 Deno.test("Shake-256 proof for no prover committed messages and half signer messages revealed", () => {
-  const cipher = Cipher.XOF_SHAKE_256
+  const cipher = CONSTANT.Cipher.XOF_SHAKE_256
 
   const header = "11223344556677889900aabbccddeeff"
   const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
@@ -600,7 +600,7 @@ Deno.test("Shake-256 proof for no prover committed messages and half signer mess
     "5ab02449b8d375f869a8df15db78eb02"
   const proverBlindness = "41fb2f74c30256398c927a262602b5ac3ebc6f84d9169476f8fcb1525c93b649"
 
-  const proof = blindProve(
+  const proof = blind.prove(
     publicKey,
     signature,
     header,
@@ -613,7 +613,7 @@ Deno.test("Shake-256 proof for no prover committed messages and half signer mess
     cipher,
   )
 
-  const result = blindValidate(
+  const result = blind.validate(
     publicKey,
     proof,
     header,
@@ -630,7 +630,7 @@ Deno.test("Shake-256 proof for no prover committed messages and half signer mess
 })
 
 Deno.test("Shake-256 proof for half prover committed messages and no signer messages revealed", () => {
-  const cipher = Cipher.XOF_SHAKE_256
+  const cipher = CONSTANT.Cipher.XOF_SHAKE_256
 
   const header = "11223344556677889900aabbccddeeff"
   const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
@@ -688,7 +688,7 @@ Deno.test("Shake-256 proof for half prover committed messages and no signer mess
     "5ab02449b8d375f869a8df15db78eb02"
   const proverBlindness = "41fb2f74c30256398c927a262602b5ac3ebc6f84d9169476f8fcb1525c93b649"
 
-  const proof = blindProve(
+  const proof = blind.prove(
     publicKey,
     signature,
     header,
@@ -701,7 +701,7 @@ Deno.test("Shake-256 proof for half prover committed messages and no signer mess
     cipher,
   )
 
-  const result = blindValidate(
+  const result = blind.validate(
     publicKey,
     proof,
     header,
@@ -718,7 +718,7 @@ Deno.test("Shake-256 proof for half prover committed messages and no signer mess
 })
 
 Deno.test("Shake-256 proof for no prover committed messages and no signer messages revealed", () => {
-  const cipher = Cipher.XOF_SHAKE_256
+  const cipher = CONSTANT.Cipher.XOF_SHAKE_256
 
   const header = "11223344556677889900aabbccddeeff"
   const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
@@ -776,7 +776,7 @@ Deno.test("Shake-256 proof for no prover committed messages and no signer messag
     "5ab02449b8d375f869a8df15db78eb02"
   const proverBlindness = "41fb2f74c30256398c927a262602b5ac3ebc6f84d9169476f8fcb1525c93b649"
 
-  const proof = blindProve(
+  const proof = blind.prove(
     publicKey,
     signature,
     header,
@@ -789,7 +789,7 @@ Deno.test("Shake-256 proof for no prover committed messages and no signer messag
     cipher,
   )
 
-  const result = blindValidate(
+  const result = blind.validate(
     publicKey,
     proof,
     header,
@@ -806,7 +806,7 @@ Deno.test("Shake-256 proof for no prover committed messages and no signer messag
 })
 
 Deno.test("Shake-256 proof for undefined prover committed messages and half signer messages revealed", () => {
-  const cipher = Cipher.XOF_SHAKE_256
+  const cipher = CONSTANT.Cipher.XOF_SHAKE_256
 
   const header = "11223344556677889900aabbccddeeff"
   const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
@@ -846,7 +846,7 @@ Deno.test("Shake-256 proof for undefined prover committed messages and half sign
     "3ac5c61bfd7f17b4063a7957456ddc0b71d46e6a05b1a464df601aabf480edf1" +
     "7ff1d6052089c294577fcfb7b851baad"
 
-  const proof = blindProve(
+  const proof = blind.prove(
     publicKey,
     signature,
     header,
@@ -859,7 +859,7 @@ Deno.test("Shake-256 proof for undefined prover committed messages and half sign
     cipher,
   )
 
-  const result = blindValidate(
+  const result = blind.validate(
     publicKey,
     proof,
     header,
@@ -876,7 +876,7 @@ Deno.test("Shake-256 proof for undefined prover committed messages and half sign
 })
 
 Deno.test("Sha-256 signature for blind no prover committed messages, no signer messages", () => {
-  const cipher = Cipher.XMD_SHA_256
+  const cipher = CONSTANT.Cipher.XMD_SHA_256
   const header = "11223344556677889900aabbccddeeff"
 
   const secretKey = "60e55110f76883a13d030b2f6bd11883422d5abde717569fc0731f51237169fc"
@@ -887,16 +887,16 @@ Deno.test("Sha-256 signature for blind no prover committed messages, no signer m
   const messages = new Array<string>()
   const committedMessages = new Array<string>()
 
-  const { commitmentWithProof, proverBlindness } = blindMessages(committedMessages, cipher)
+  const { commitmentWithProof, proverBlindness } = blind.commit(committedMessages, cipher)
 
-  const signature = blindSign(secretKey, publicKey, commitmentWithProof, header, messages, cipher)
-  const result = blindVerify(publicKey, signature, header, messages, committedMessages, proverBlindness, cipher)
+  const signature = blind.sign(secretKey, publicKey, commitmentWithProof, header, messages, cipher)
+  const result = blind.verify(publicKey, signature, header, messages, committedMessages, proverBlindness, cipher)
 
   assert(result)
 })
 
 Deno.test("Sha-256 signature for blind multiple prover committed messages, no signer messages", () => {
-  const cipher = Cipher.XMD_SHA_256
+  const cipher = CONSTANT.Cipher.XMD_SHA_256
   const header = "11223344556677889900aabbccddeeff"
 
   const secretKey = "60e55110f76883a13d030b2f6bd11883422d5abde717569fc0731f51237169fc"
@@ -919,16 +919,16 @@ Deno.test("Sha-256 signature for blind multiple prover committed messages, no si
     committedMessage4,
   ]
 
-  const { commitmentWithProof, proverBlindness } = blindMessages(committedMessages, cipher)
+  const { commitmentWithProof, proverBlindness } = blind.commit(committedMessages, cipher)
 
-  const signature = blindSign(secretKey, publicKey, commitmentWithProof, header, messages, cipher)
-  const result = blindVerify(publicKey, signature, header, messages, committedMessages, proverBlindness, cipher)
+  const signature = blind.sign(secretKey, publicKey, commitmentWithProof, header, messages, cipher)
+  const result = blind.verify(publicKey, signature, header, messages, committedMessages, proverBlindness, cipher)
 
   assert(result)
 })
 
 Deno.test("Sha-256 signature for blind no prover committed messages, multiple signer messages", () => {
-  const cipher = Cipher.XMD_SHA_256
+  const cipher = CONSTANT.Cipher.XMD_SHA_256
   const header = "11223344556677889900aabbccddeeff"
 
   const secretKey = "60e55110f76883a13d030b2f6bd11883422d5abde717569fc0731f51237169fc"
@@ -961,16 +961,16 @@ Deno.test("Sha-256 signature for blind no prover committed messages, multiple si
   ]
   const committedMessages = new Array<string>()
 
-  const { commitmentWithProof, proverBlindness } = blindMessages(committedMessages, cipher)
+  const { commitmentWithProof, proverBlindness } = blind.commit(committedMessages, cipher)
 
-  const signature = blindSign(secretKey, publicKey, commitmentWithProof, header, messages, cipher)
-  const result = blindVerify(publicKey, signature, header, messages, committedMessages, proverBlindness, cipher)
+  const signature = blind.sign(secretKey, publicKey, commitmentWithProof, header, messages, cipher)
+  const result = blind.verify(publicKey, signature, header, messages, committedMessages, proverBlindness, cipher)
 
   assert(result)
 })
 
 Deno.test("Sha-256 signature for blind multiple prover committed messages, multiple signer messages", () => {
-  const cipher = Cipher.XMD_SHA_256
+  const cipher = CONSTANT.Cipher.XMD_SHA_256
   const header = "11223344556677889900aabbccddeeff"
 
   const secretKey = "60e55110f76883a13d030b2f6bd11883422d5abde717569fc0731f51237169fc"
@@ -1015,16 +1015,16 @@ Deno.test("Sha-256 signature for blind multiple prover committed messages, multi
     committedMessage4,
   ]
 
-  const { commitmentWithProof, proverBlindness } = blindMessages(committedMessages, cipher)
+  const { commitmentWithProof, proverBlindness } = blind.commit(committedMessages, cipher)
 
-  const signature = blindSign(secretKey, publicKey, commitmentWithProof, header, messages, cipher)
-  const result = blindVerify(publicKey, signature, header, messages, committedMessages, proverBlindness, cipher)
+  const signature = blind.sign(secretKey, publicKey, commitmentWithProof, header, messages, cipher)
+  const result = blind.verify(publicKey, signature, header, messages, committedMessages, proverBlindness, cipher)
 
   assert(result)
 })
 
 Deno.test("Sha-256 signature for blind undefined prover committed messages, multiple signer messages", () => {
-  const cipher = Cipher.XMD_SHA_256
+  const cipher = CONSTANT.Cipher.XMD_SHA_256
   const header = "11223344556677889900aabbccddeeff"
 
   const secretKey = "60e55110f76883a13d030b2f6bd11883422d5abde717569fc0731f51237169fc"
@@ -1056,14 +1056,14 @@ Deno.test("Sha-256 signature for blind undefined prover committed messages, mult
     message9,
   ]
 
-  const signature = blindSign(secretKey, publicKey, undefined, header, messages, cipher)
-  const result = blindVerify(publicKey, signature, header, messages, undefined, undefined, cipher)
+  const signature = blind.sign(secretKey, publicKey, undefined, header, messages, cipher)
+  const result = blind.verify(publicKey, signature, header, messages, undefined, undefined, cipher)
 
   assert(result)
 })
 
 Deno.test("Sha-256 proof for all prover committed messages and signer messages revealed", () => {
-  const cipher = Cipher.XMD_SHA_256
+  const cipher = CONSTANT.Cipher.XMD_SHA_256
 
   const header = "11223344556677889900aabbccddeeff"
   const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
@@ -1121,7 +1121,7 @@ Deno.test("Sha-256 proof for all prover committed messages and signer messages r
     "aa8feb7f3a236e92b2da38462358c48a"
   const proverBlindness = "4fba5396baa36b2fde81d46a9b9ee89c425dbc5e1ffd65c20249afb4abd37589"
 
-  const proof = blindProve(
+  const proof = blind.prove(
     publicKey,
     signature,
     header,
@@ -1134,7 +1134,7 @@ Deno.test("Sha-256 proof for all prover committed messages and signer messages r
     cipher,
   )
 
-  const result = blindValidate(
+  const result = blind.validate(
     publicKey,
     proof,
     header,
@@ -1151,7 +1151,7 @@ Deno.test("Sha-256 proof for all prover committed messages and signer messages r
 })
 
 Deno.test("Sha-256 proof for half prover committed messages and all signer messages revealed", () => {
-  const cipher = Cipher.XMD_SHA_256
+  const cipher = CONSTANT.Cipher.XMD_SHA_256
 
   const header = "11223344556677889900aabbccddeeff"
   const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
@@ -1209,7 +1209,7 @@ Deno.test("Sha-256 proof for half prover committed messages and all signer messa
     "aa8feb7f3a236e92b2da38462358c48a"
   const proverBlindness = "4fba5396baa36b2fde81d46a9b9ee89c425dbc5e1ffd65c20249afb4abd37589"
 
-  const proof = blindProve(
+  const proof = blind.prove(
     publicKey,
     signature,
     header,
@@ -1222,7 +1222,7 @@ Deno.test("Sha-256 proof for half prover committed messages and all signer messa
     cipher,
   )
 
-  const result = blindValidate(
+  const result = blind.validate(
     publicKey,
     proof,
     header,
@@ -1239,7 +1239,7 @@ Deno.test("Sha-256 proof for half prover committed messages and all signer messa
 })
 
 Deno.test("Sha-256 proof for all prover committed messages and half signer messages revealed", () => {
-  const cipher = Cipher.XMD_SHA_256
+  const cipher = CONSTANT.Cipher.XMD_SHA_256
 
   const header = "11223344556677889900aabbccddeeff"
   const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
@@ -1297,7 +1297,7 @@ Deno.test("Sha-256 proof for all prover committed messages and half signer messa
     "aa8feb7f3a236e92b2da38462358c48a"
   const proverBlindness = "4fba5396baa36b2fde81d46a9b9ee89c425dbc5e1ffd65c20249afb4abd37589"
 
-  const proof = blindProve(
+  const proof = blind.prove(
     publicKey,
     signature,
     header,
@@ -1310,7 +1310,7 @@ Deno.test("Sha-256 proof for all prover committed messages and half signer messa
     cipher,
   )
 
-  const result = blindValidate(
+  const result = blind.validate(
     publicKey,
     proof,
     header,
@@ -1327,7 +1327,7 @@ Deno.test("Sha-256 proof for all prover committed messages and half signer messa
 })
 
 Deno.test("Sha-256 proof for half prover committed messages and half signer messages revealed", () => {
-  const cipher = Cipher.XMD_SHA_256
+  const cipher = CONSTANT.Cipher.XMD_SHA_256
 
   const header = "11223344556677889900aabbccddeeff"
   const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
@@ -1385,7 +1385,7 @@ Deno.test("Sha-256 proof for half prover committed messages and half signer mess
     "aa8feb7f3a236e92b2da38462358c48a"
   const proverBlindness = "4fba5396baa36b2fde81d46a9b9ee89c425dbc5e1ffd65c20249afb4abd37589"
 
-  const proof = blindProve(
+  const proof = blind.prove(
     publicKey,
     signature,
     header,
@@ -1398,7 +1398,7 @@ Deno.test("Sha-256 proof for half prover committed messages and half signer mess
     cipher,
   )
 
-  const result = blindValidate(
+  const result = blind.validate(
     publicKey,
     proof,
     header,
@@ -1415,7 +1415,7 @@ Deno.test("Sha-256 proof for half prover committed messages and half signer mess
 })
 
 Deno.test("Sha-256 proof for no prover committed messages and half signer messages revealed", () => {
-  const cipher = Cipher.XMD_SHA_256
+  const cipher = CONSTANT.Cipher.XMD_SHA_256
 
   const header = "11223344556677889900aabbccddeeff"
   const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
@@ -1473,7 +1473,7 @@ Deno.test("Sha-256 proof for no prover committed messages and half signer messag
     "aa8feb7f3a236e92b2da38462358c48a"
   const proverBlindness = "4fba5396baa36b2fde81d46a9b9ee89c425dbc5e1ffd65c20249afb4abd37589"
 
-  const proof = blindProve(
+  const proof = blind.prove(
     publicKey,
     signature,
     header,
@@ -1486,7 +1486,7 @@ Deno.test("Sha-256 proof for no prover committed messages and half signer messag
     cipher,
   )
 
-  const result = blindValidate(
+  const result = blind.validate(
     publicKey,
     proof,
     header,
@@ -1503,7 +1503,7 @@ Deno.test("Sha-256 proof for no prover committed messages and half signer messag
 })
 
 Deno.test("Sha-256 proof for half prover committed messages and no signer messages revealed", () => {
-  const cipher = Cipher.XMD_SHA_256
+  const cipher = CONSTANT.Cipher.XMD_SHA_256
 
   const header = "11223344556677889900aabbccddeeff"
   const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
@@ -1561,7 +1561,7 @@ Deno.test("Sha-256 proof for half prover committed messages and no signer messag
     "aa8feb7f3a236e92b2da38462358c48a"
   const proverBlindness = "4fba5396baa36b2fde81d46a9b9ee89c425dbc5e1ffd65c20249afb4abd37589"
 
-  const proof = blindProve(
+  const proof = blind.prove(
     publicKey,
     signature,
     header,
@@ -1574,7 +1574,7 @@ Deno.test("Sha-256 proof for half prover committed messages and no signer messag
     cipher,
   )
 
-  const result = blindValidate(
+  const result = blind.validate(
     publicKey,
     proof,
     header,
@@ -1591,7 +1591,7 @@ Deno.test("Sha-256 proof for half prover committed messages and no signer messag
 })
 
 Deno.test("Sha-256 proof for no prover committed messages and no signer messages revealed", () => {
-  const cipher = Cipher.XMD_SHA_256
+  const cipher = CONSTANT.Cipher.XMD_SHA_256
 
   const header = "11223344556677889900aabbccddeeff"
   const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
@@ -1649,7 +1649,7 @@ Deno.test("Sha-256 proof for no prover committed messages and no signer messages
     "aa8feb7f3a236e92b2da38462358c48a"
   const proverBlindness = "4fba5396baa36b2fde81d46a9b9ee89c425dbc5e1ffd65c20249afb4abd37589"
 
-  const proof = blindProve(
+  const proof = blind.prove(
     publicKey,
     signature,
     header,
@@ -1662,7 +1662,7 @@ Deno.test("Sha-256 proof for no prover committed messages and no signer messages
     cipher,
   )
 
-  const result = blindValidate(
+  const result = blind.validate(
     publicKey,
     proof,
     header,
@@ -1679,7 +1679,7 @@ Deno.test("Sha-256 proof for no prover committed messages and no signer messages
 })
 
 Deno.test("Sha-256 proof for undefined prover committed messages and half signer messages revealed", () => {
-  const cipher = Cipher.XMD_SHA_256
+  const cipher = CONSTANT.Cipher.XMD_SHA_256
 
   const header = "11223344556677889900aabbccddeeff"
   const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
@@ -1719,7 +1719,7 @@ Deno.test("Sha-256 proof for undefined prover committed messages and half signer
     "58a87735d727383b864904aa7b5e4a9b3821a18319df0ccb2e351a9bf75bf1f3" +
     "4d8858dde57119bfafd8ff56e0c54fa4"
 
-  const proof = blindProve(
+  const proof = blind.prove(
     publicKey,
     signature,
     header,
@@ -1732,7 +1732,7 @@ Deno.test("Sha-256 proof for undefined prover committed messages and half signer
     cipher,
   )
 
-  const result = blindValidate(
+  const result = blind.validate(
     publicKey,
     proof,
     header,

@@ -1,8 +1,11 @@
 // Keypair generation and derivation
-export { derivePublicKey, generateKeypair, generateSecretKey } from "./api/key.ts"
+export * as key from "./key.ts"
 
 // Basic BBS signing and signature verification; BBS proof generation and verification
-export { prove, sign, validate, verify } from "./api/basic.ts"
+export * as basic from "./basic.ts"
 
 // Blind BBS signature generation and verification; Blind BBS proof generation and verification
-export { blindMessages, blindSign, blindVerify } from "./api/blind.ts"
+export * as blind from "./blind.ts"
+
+// BBS (with pseudonym) signature generation and verification; BBS (with pseudonym) proof generation and verification
+export * as pseudonym from "./pseudonym.ts"

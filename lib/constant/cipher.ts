@@ -1,4 +1,0 @@
-export enum Cipher {
-  XOF_SHAKE_256 = "BLS12_381_G1_XOF_SHAKE_256",
-  XMD_SHA_256 = "BLS12_381_G1_XMD_SHA_256",
-}

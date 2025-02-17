@@ -1,4 +1,4 @@
-import { Cipher } from "../constant/cipher.ts"
+import { Cipher } from "./constants.ts"
 
 /**
  * Assert that the provided value is a existing value.
@@ -6,7 +6,7 @@ import { Cipher } from "../constant/cipher.ts"
  * @param {unknown} value The value to be validated.
  * @param {string} [message] The message to be thrown if the assertion fails.
  */
-export function assertExist(value: unknown, message?: string) {
+export function exist(value: unknown, message?: string) {
   if (value === undefined || value === null) {
     throw new Error(message || "The provided value does not exist.")
   }
@@ -18,7 +18,7 @@ export function assertExist(value: unknown, message?: string) {
  * @param {string} [str] The string to be validated.
  * @param {string} [message] The message to be thrown if the assertion fails.
  */
-export function assertEvenLength(str?: string, message?: string) {
+export function isEvenLengthString(str?: string, message?: string) {
   if (!str) return
   if (str.length % 2 !== 0) {
     throw new Error(message || "The provided string MUST have an even length.")
@@ -31,7 +31,7 @@ export function assertEvenLength(str?: string, message?: string) {
  * @param {string} [str] The string to be validated.
  * @param {string} [message] The message to be thrown if the assertion fails.
  */
-export function assertHexEncoding(str?: string, message?: string) {
+export function isHexString(str?: string, message?: string) {
   if (!str) return
   if (!/^[0-9a-fA-F]*$/.test(str)) {
     throw new Error(message || "The provided string MUST be encoded in hexadecimal format.")
@@ -44,9 +44,9 @@ export function assertHexEncoding(str?: string, message?: string) {
  * @param {string} [str] The string to be validated.
  * @param {string} [message] The message to be thrown if the assertion fails.
  */
-export function assertHexString(str?: string, message?: string) {
-  assertEvenLength(str, message)
-  assertHexEncoding(str, message)
+export function isValidString(str?: string, message?: string) {
+  isEvenLengthString(str, message)
+  isHexString(str, message)
 }
 
 /**
@@ -56,7 +56,7 @@ export function assertHexString(str?: string, message?: string) {
  * @param {number} length The maximum length the string should be.
  * @param {string} [message] The message to be thrown if the assertion fails.
  */
-export function assertLengthMax(str: string, length: number, message?: string) {
+export function maxLength(str: string, length: number, message?: string) {
   if (str.length > length) {
     throw new Error(message || `The provided string MUST be no longer than ${length}.`)
   }
@@ -69,7 +69,7 @@ export function assertLengthMax(str: string, length: number, message?: string) {
  * @param {number} length The minimum length the string should be.
  * @param {string} [message] The message to be thrown if the assertion fails.
  */
-export function assertLengthMin(str: string, length: number, message?: string) {
+export function minLength(str: string, length: number, message?: string) {
   if (str.length < length) {
     throw new Error(message || `The provided string MUST be at least ${length}.`)
   }
@@ -82,7 +82,7 @@ export function assertLengthMin(str: string, length: number, message?: string) {
  * @param {number} length The length the string should be.
  * @param {string} [message] The message to be thrown if the assertion fails.
  */
-export function assertLength(str: string, length: number, message?: string) {
+export function length(str: string, length: number, message?: string) {
   if (str.length !== length) {
     throw new Error(message || `The provided string MUST be of length ${length}.`)
   }
@@ -94,7 +94,7 @@ export function assertLength(str: string, length: number, message?: string) {
  * @param {string} cipher The cipher string to be validated.
  * @param {string} [message] The message to be thrown if the assertion fails.
  */
-export function assertCipher(cipher: string, message?: string) {
+export function cipher(cipher: string, message?: string) {
   if (!Object.values(Cipher).includes(cipher as Cipher)) {
     throw new Error(message || `The specified cryptographic suite ${cipher} is not supported.`)
   }
@@ -106,7 +106,7 @@ export function assertCipher(cipher: string, message?: string) {
  * @param {Array<number>} [array] An array of numbers to be validated.
  * @param {string} [message] The message to be thrown if the assertion fails.
  */
-export function assertAscending(array?: Array<number>, message?: string) {
+export function isAscendingArray(array?: Array<number>, message?: string) {
   if (!array) return
   if (array.some((value, i) => i > 0 && value <= array[i - 1])) {
     throw new Error(message || "The provided array is not in ascending order.")
@@ -119,7 +119,7 @@ export function assertAscending(array?: Array<number>, message?: string) {
  * @param {Array<number>} [array] An array of numbers to be validated.
  * @param {string} [message] The message to be thrown if the assertion fails.
  */
-export function assertInteger(array?: Array<number>, message?: string) {
+export function isIntegerArray(array?: Array<number>, message?: string) {
   if (!array) return
   if (array.some((v) => !Number.isInteger(v))) {
     throw new Error(message || "The provided array MUST be an array of integers.")
@@ -132,7 +132,7 @@ export function assertInteger(array?: Array<number>, message?: string) {
  * @param {Array<number>} [array] An array of numbers to be validated.
  * @param {string} [message] The message to be thrown if the assertion fails.
  */
-export function assertNonNegative(array?: Array<number>, message?: string) {
+export function isNonNegativeArray(array?: Array<number>, message?: string) {
   if (!array) return
   if (array.some((value) => value < 0)) {
     throw new Error(message || "The provided array MUST be an array of non-negative integers.")
@@ -147,7 +147,7 @@ export function assertNonNegative(array?: Array<number>, message?: string) {
  * @param {number} [max] The maximum value of the range.
  * @param {string} [message] The message to be thrown if the assertion fails.
  */
-export function assertRange(array?: Array<number>, min?: number, max?: number, message?: string) {
+export function RangeArray(array?: Array<number>, min?: number, max?: number, message?: string) {
   if (!array) return
   if (!min && !max) return
   if (array.some((value) => (min !== undefined && value < min) || (max !== undefined && value > max))) {
@@ -162,11 +162,11 @@ export function assertRange(array?: Array<number>, min?: number, max?: number, m
  * @param {number} [maxIndex] The maximum index allowed.
  * @param {string} [message] The message to be thrown if the assertion fails.
  */
-export function assertIndexes(indexes?: Array<number>, maxIndex?: number, message?: string) {
-  assertAscending(indexes, message)
-  assertInteger(indexes, message)
-  assertNonNegative(indexes, message)
-  assertRange(indexes, 0, maxIndex, message)
+export function isValidIndexes(indexes?: Array<number>, maxIndex?: number, message?: string) {
+  isAscendingArray(indexes, message)
+  isIntegerArray(indexes, message)
+  isNonNegativeArray(indexes, message)
+  RangeArray(indexes, 0, maxIndex, message)
 }
 
 /**
@@ -176,7 +176,7 @@ export function assertIndexes(indexes?: Array<number>, maxIndex?: number, messag
  * @param {unknown} [b] A value to be compared.
  * @param {MessageChannel} [message] The message to be thrown if the assertion fails.
  */
-export function assertEquality(a?: unknown, b?: unknown, message?: string) {
+export function equal(a?: unknown, b?: unknown, message?: string) {
   if (!a && !b) return
   if (a !== b) {
     throw new Error(message || `The provided value ${a} is not equal to ${b}.`)

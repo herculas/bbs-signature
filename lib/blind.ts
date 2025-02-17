@@ -1,17 +1,7 @@
-import { blind_messages, blind_prove, blind_sign, blind_validate, blind_verify } from "../../pkg/bbs_signature.js"
+import { blind_messages, blind_prove, blind_sign, blind_validate, blind_verify } from "../pkg/bbs_signature.js"
 
-import {
-  assertCipher,
-  assertEquality,
-  assertExist,
-  assertHexString,
-  assertIndexes,
-  assertLength,
-  assertLengthMin,
-} from "../util/assertion.ts"
-import { Cipher } from "../constant/cipher.ts"
-
-import * as ALGORITHM_CONSTANT from "../constant/algorithm.ts"
+import * as assert from "./assertion.ts"
+import * as CONSTANT from "./constants.ts"
 
 /**
  * Commit to a set of messages by the prover to blind these messages before sending them to the signer. Note that this
@@ -25,9 +15,9 @@ import * as ALGORITHM_CONSTANT from "../constant/algorithm.ts"
  *
  * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-00#name-commitment-computation
  */
-export function blindMessages(
+export function commit(
   committedMessages?: Array<string>,
-  cipher: Cipher = Cipher.XOF_SHAKE_256,
+  cipher: CONSTANT.Cipher = CONSTANT.Cipher.XOF_SHAKE_256,
 ): {
   commitmentWithProof: string
   proverBlindness: string
@@ -35,16 +25,16 @@ export function blindMessages(
   // hex string check
   if (committedMessages) {
     committedMessages.forEach((message) =>
-      assertHexString(message, "The committed messages must be valid hex strings.")
+      assert.isValidString(message, "The committed messages must be valid hex strings.")
     )
   }
 
   // cipher check
-  assertCipher(cipher)
+  assert.cipher(cipher)
 
   const res = blind_messages(committedMessages, cipher)
-  const commitmentWithProof = res.slice(0, -ALGORITHM_CONSTANT.LENGTH_SCALAR)
-  const proverBlindness = res.slice(-ALGORITHM_CONSTANT.LENGTH_SCALAR)
+  const commitmentWithProof = res.slice(0, -CONSTANT.LENGTH_SCALAR)
+  const proverBlindness = res.slice(-CONSTANT.LENGTH_SCALAR)
 
   return {
     commitmentWithProof,
@@ -67,44 +57,44 @@ export function blindMessages(
  *
  * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-00#name-blind-signature-generation
  */
-export function blindSign(
+export function sign(
   secretKey: string,
   publicKey: string,
   commitmentWithProof?: string,
   header?: string,
   messages?: Array<string>,
-  cipher: Cipher = Cipher.XOF_SHAKE_256,
+  cipher: CONSTANT.Cipher = CONSTANT.Cipher.XOF_SHAKE_256,
 ): string {
   // existence check
-  assertExist(secretKey, "The secret key must be provided.")
-  assertExist(publicKey, "The public key must be provided.")
+  assert.exist(secretKey, "The secret key must be provided.")
+  assert.exist(publicKey, "The public key must be provided.")
 
   // hex string check
-  assertHexString(secretKey, "The secret key must be a valid hex string.")
-  assertHexString(publicKey, "The public key must be a valid hex string.")
-  assertHexString(commitmentWithProof, "The commitment with proof must be a valid hex string.")
-  assertHexString(header, "The header must be a valid hex string.")
-  if (messages) messages.forEach((message) => assertHexString(message, "The messages must be valid hex strings."))
+  assert.isValidString(secretKey, "The secret key must be a valid hex string.")
+  assert.isValidString(publicKey, "The public key must be a valid hex string.")
+  assert.isValidString(commitmentWithProof, "The commitment with proof must be a valid hex string.")
+  assert.isValidString(header, "The header must be a valid hex string.")
+  if (messages) messages.forEach((message) => assert.isValidString(message, "The messages must be valid hex strings."))
 
   // cipher check
-  assertCipher(cipher)
+  assert.cipher(cipher)
 
   // length check
-  assertLength(
+  assert.length(
     secretKey,
-    ALGORITHM_CONSTANT.LENGTH_SECRET_KEY,
-    `The secret key must be ${ALGORITHM_CONSTANT.LENGTH_SECRET_KEY / 2} bytes long.`,
+    CONSTANT.LENGTH_SECRET_KEY,
+    `The secret key must be ${CONSTANT.LENGTH_SECRET_KEY / 2} bytes long.`,
   )
-  assertLength(
+  assert.length(
     publicKey,
-    ALGORITHM_CONSTANT.LENGTH_PUBLIC_KEY,
-    `The public key must be ${ALGORITHM_CONSTANT.LENGTH_PUBLIC_KEY / 2} bytes long.`,
+    CONSTANT.LENGTH_PUBLIC_KEY,
+    `The public key must be ${CONSTANT.LENGTH_PUBLIC_KEY / 2} bytes long.`,
   )
   if (commitmentWithProof) {
-    assertLengthMin(
+    assert.minLength(
       commitmentWithProof,
-      ALGORITHM_CONSTANT.LENGTH_MINIMUM_COMMIT_WITH_PROOF,
-      `The commitment with proof must be at least ${ALGORITHM_CONSTANT.LENGTH_MINIMUM_COMMIT_WITH_PROOF} bytes long.`,
+      CONSTANT.LENGTH_MINIMUM_COMMIT_WITH_PROOF,
+      `The commitment with proof must be at least ${CONSTANT.LENGTH_MINIMUM_COMMIT_WITH_PROOF} bytes long.`,
     )
   }
 
@@ -127,44 +117,44 @@ export function blindSign(
  *
  * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-00#name-blind-signature-verificatio
  */
-export function blindVerify(
+export function verify(
   publicKey: string,
   signature: string,
   header?: string,
   messages?: Array<string>,
   committedMessages?: Array<string>,
   proverBlindness?: string,
-  cipher: Cipher = Cipher.XOF_SHAKE_256,
+  cipher: CONSTANT.Cipher = CONSTANT.Cipher.XOF_SHAKE_256,
 ): boolean {
   // existence check
-  assertExist(publicKey, "The public key must be provided.")
-  assertExist(signature, "The signature must be provided.")
+  assert.exist(publicKey, "The public key must be provided.")
+  assert.exist(signature, "The signature must be provided.")
 
   // hex string check
-  assertHexString(publicKey, "The public key must be a valid hex string.")
-  assertHexString(signature, "The signature must be a valid hex string.")
-  assertHexString(header, "The header must be a valid hex string.")
-  assertHexString(proverBlindness, "The prover blindness must be a valid hex string.")
-  if (messages) messages.forEach((message) => assertHexString(message, "The messages must be valid hex strings."))
+  assert.isValidString(publicKey, "The public key must be a valid hex string.")
+  assert.isValidString(signature, "The signature must be a valid hex string.")
+  assert.isValidString(header, "The header must be a valid hex string.")
+  assert.isValidString(proverBlindness, "The prover blindness must be a valid hex string.")
+  if (messages) messages.forEach((message) => assert.isValidString(message, "The messages must be valid hex strings."))
   if (committedMessages) {
     committedMessages.forEach((message) =>
-      assertHexString(message, "The committed messages must be valid hex strings.")
+      assert.isValidString(message, "The committed messages must be valid hex strings.")
     )
   }
 
   // cipher check
-  assertCipher(cipher)
+  assert.cipher(cipher)
 
   // length check
-  assertLength(
+  assert.length(
     publicKey,
-    ALGORITHM_CONSTANT.LENGTH_PUBLIC_KEY,
-    `The public key must be ${ALGORITHM_CONSTANT.LENGTH_PUBLIC_KEY / 2} bytes long.`,
+    CONSTANT.LENGTH_PUBLIC_KEY,
+    `The public key must be ${CONSTANT.LENGTH_PUBLIC_KEY / 2} bytes long.`,
   )
-  assertLength(
+  assert.length(
     signature,
-    ALGORITHM_CONSTANT.LENGTH_SIGNATURE,
-    `The signature must be ${ALGORITHM_CONSTANT.LENGTH_SIGNATURE / 2} bytes long.`,
+    CONSTANT.LENGTH_SIGNATURE,
+    `The signature must be ${CONSTANT.LENGTH_SIGNATURE / 2} bytes long.`,
   )
 
   return blind_verify(publicKey, signature, header, messages, committedMessages, proverBlindness, cipher)
@@ -197,7 +187,7 @@ export function blindVerify(
  *
  * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-00#name-proof-generation
  */
-export function blindProve(
+export function prove(
   publicKey: string,
   signature: string,
   header?: string,
@@ -207,47 +197,47 @@ export function blindProve(
   disclosedIndexes?: Array<number>,
   disclosedCommitmentIndexes?: Array<number>,
   proverBlindness?: string,
-  cipher: Cipher = Cipher.XOF_SHAKE_256,
+  cipher: CONSTANT.Cipher = CONSTANT.Cipher.XOF_SHAKE_256,
 ): string {
   // existence check
-  assertExist(publicKey, "The public key must be provided.")
-  assertExist(signature, "The signature must be provided.")
+  assert.exist(publicKey, "The public key must be provided.")
+  assert.exist(signature, "The signature must be provided.")
 
   // hex string check
-  assertHexString(publicKey, "The public key must be a valid hex string.")
-  assertHexString(signature, "The signature must be a valid hex string.")
-  assertHexString(header, "The header must be a valid hex string.")
-  assertHexString(presentationHeader, "The presentation header must be a valid hex string.")
-  assertHexString(proverBlindness, "The prover blindness must be a valid hex string.")
-  if (messages) messages.forEach((message) => assertHexString(message, "The messages must be valid hex strings."))
+  assert.isValidString(publicKey, "The public key must be a valid hex string.")
+  assert.isValidString(signature, "The signature must be a valid hex string.")
+  assert.isValidString(header, "The header must be a valid hex string.")
+  assert.isValidString(presentationHeader, "The presentation header must be a valid hex string.")
+  assert.isValidString(proverBlindness, "The prover blindness must be a valid hex string.")
+  if (messages) messages.forEach((message) => assert.isValidString(message, "The messages must be valid hex strings."))
   if (committedMessages) {
     committedMessages.forEach((message) =>
-      assertHexString(message, "The committed messages must be valid hex strings.")
+      assert.isValidString(message, "The committed messages must be valid hex strings.")
     )
   }
 
   // cipher check
-  assertCipher(cipher)
+  assert.cipher(cipher)
 
   // length check
-  assertLength(
+  assert.length(
     publicKey,
-    ALGORITHM_CONSTANT.LENGTH_PUBLIC_KEY,
-    `The public key must be ${ALGORITHM_CONSTANT.LENGTH_PUBLIC_KEY / 2} bytes long.`,
+    CONSTANT.LENGTH_PUBLIC_KEY,
+    `The public key must be ${CONSTANT.LENGTH_PUBLIC_KEY / 2} bytes long.`,
   )
-  assertLength(
+  assert.length(
     signature,
-    ALGORITHM_CONSTANT.LENGTH_SIGNATURE,
-    `The signature must be ${ALGORITHM_CONSTANT.LENGTH_SIGNATURE / 2} bytes long.`,
+    CONSTANT.LENGTH_SIGNATURE,
+    `The signature must be ${CONSTANT.LENGTH_SIGNATURE / 2} bytes long.`,
   )
 
   // index check
-  assertIndexes(
+  assert.isValidIndexes(
     disclosedIndexes,
     messages?.length,
     "The disclosed indexes must be in ascending order and within bounds.",
   )
-  assertIndexes(
+  assert.isValidIndexes(
     disclosedCommitmentIndexes,
     committedMessages?.length,
     "The disclosed commitment indexes must be in ascending order and within bounds.",
@@ -290,7 +280,7 @@ export function blindProve(
  *
  * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-00#name-proof-verification
  */
-export function blindValidate(
+export function validate(
   publicKey: string,
   proof: string,
   header?: string,
@@ -300,50 +290,50 @@ export function blindValidate(
   disclosedCommitmentMessages?: Array<string>,
   disclosedIndexes?: Array<number>,
   disclosedCommitmentIndexes?: Array<number>,
-  cipher: Cipher = Cipher.XOF_SHAKE_256,
+  cipher: CONSTANT.Cipher = CONSTANT.Cipher.XOF_SHAKE_256,
 ): boolean {
   // existence check
-  assertExist(publicKey, "The public key must be provided.")
-  assertExist(proof, "The proof must be provided.")
+  assert.exist(publicKey, "The public key must be provided.")
+  assert.exist(proof, "The proof must be provided.")
 
   // hex string check
-  assertHexString(publicKey, "The public key must be a valid hex string.")
-  assertHexString(proof, "The proof must be a valid hex string.")
-  assertHexString(header, "The header must be a valid hex string.")
-  assertHexString(presentationHeader, "The presentation header must be a valid hex string.")
+  assert.isValidString(publicKey, "The public key must be a valid hex string.")
+  assert.isValidString(proof, "The proof must be a valid hex string.")
+  assert.isValidString(header, "The header must be a valid hex string.")
+  assert.isValidString(presentationHeader, "The presentation header must be a valid hex string.")
   if (disclosedMessages) {
     disclosedMessages.forEach((message) =>
-      assertHexString(message, "The disclosed messages must be valid hex strings.")
+      assert.isValidString(message, "The disclosed messages must be valid hex strings.")
     )
   }
   if (disclosedCommitmentMessages) {
     disclosedCommitmentMessages.forEach((message) =>
-      assertHexString(message, "The disclosed commitment messages must be valid hex strings.")
+      assert.isValidString(message, "The disclosed commitment messages must be valid hex strings.")
     )
   }
 
   // cipher check
-  assertCipher(cipher)
+  assert.cipher(cipher)
 
   // length check
-  assertLength(
+  assert.length(
     publicKey,
-    ALGORITHM_CONSTANT.LENGTH_PUBLIC_KEY,
-    `The public key must be ${ALGORITHM_CONSTANT.LENGTH_PUBLIC_KEY / 2} bytes long.`,
+    CONSTANT.LENGTH_PUBLIC_KEY,
+    `The public key must be ${CONSTANT.LENGTH_PUBLIC_KEY / 2} bytes long.`,
   )
-  assertLengthMin(
+  assert.minLength(
     proof,
-    ALGORITHM_CONSTANT.LENGTH_MINIMUM_PROOF,
-    `The proof must be at least ${ALGORITHM_CONSTANT.LENGTH_MINIMUM_PROOF / 2} bytes long.`,
+    CONSTANT.LENGTH_MINIMUM_PROOF,
+    `The proof must be at least ${CONSTANT.LENGTH_MINIMUM_PROOF / 2} bytes long.`,
   )
 
   // index check
-  assertEquality(
+  assert.equal(
     disclosedMessages?.length,
     disclosedIndexes?.length,
     "The length of the disclosed messages and indexes must be equal.",
   )
-  assertEquality(
+  assert.equal(
     disclosedCommitmentMessages?.length,
     disclosedCommitmentIndexes?.length,
     "The length of the disclosed commitment messages and indexes must be equal.",

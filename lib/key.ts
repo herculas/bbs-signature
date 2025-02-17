@@ -1,9 +1,7 @@
-import { derive_public_key, generate_secret_key } from "../../pkg/bbs_signature.js"
+import { derive_public_key, generate_secret_key } from "../pkg/bbs_signature.js"
 
-import { assertCipher, assertExist, assertHexString, assertLength, assertLengthMin } from "../util/assertion.ts"
-import { Cipher } from "../constant/cipher.ts"
-
-import * as ALGORITHM_CONSTANT from "../constant/algorithm.ts"
+import * as assert from "./assertion.ts"
+import * as CONSTANT from "./constants.ts"
 
 /**
  * Generate a secret key deterministically from a secret material and an optional key information string.
@@ -17,28 +15,28 @@ import * as ALGORITHM_CONSTANT from "../constant/algorithm.ts"
  *
  * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07#name-secret-key
  */
-export function generateSecretKey(
+export function generateSecret(
   material: string,
   info?: string,
   dst?: string,
-  cipher: Cipher = Cipher.XOF_SHAKE_256,
+  cipher: CONSTANT.Cipher = CONSTANT.Cipher.XOF_SHAKE_256,
 ): string {
   // existence check
-  assertExist(material, "The secret material must be provided.")
+  assert.exist(material, "The secret material must be provided.")
 
   // hex string check
-  assertHexString(material, "The secret material must be a valid hex string.")
-  assertHexString(info, "The info must be a valid hex string.")
-  assertHexString(dst, "The domain separation tag must be a valid hex string.")
+  assert.isValidString(material, "The secret material must be a valid hex string.")
+  assert.isValidString(info, "The info must be a valid hex string.")
+  assert.isValidString(dst, "The domain separation tag must be a valid hex string.")
 
   // cipher check
-  assertCipher(cipher)
+  assert.cipher(cipher)
 
   // length check
-  assertLengthMin(
+  assert.minLength(
     material,
-    ALGORITHM_CONSTANT.LENGTH_MINIMUM_KEY_MATERIAL,
-    `The secret material must be at least ${ALGORITHM_CONSTANT.LENGTH_MINIMUM_KEY_MATERIAL / 2} bytes.`,
+    CONSTANT.LENGTH_MINIMUM_KEY_MATERIAL,
+    `The secret material must be at least ${CONSTANT.LENGTH_MINIMUM_KEY_MATERIAL / 2} bytes.`,
   )
 
   return generate_secret_key(material, info, dst, cipher)
@@ -53,18 +51,18 @@ export function generateSecretKey(
  *
  * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07#name-public-key
  */
-export function derivePublicKey(secretKey: string): string {
+export function derivePublic(secretKey: string): string {
   // existence check
-  assertExist(secretKey, "The secret key must be provided.")
+  assert.exist(secretKey, "The secret key must be provided.")
 
   // hex string check
-  assertHexString(secretKey, "The secret key must be a valid hex string.")
+  assert.isValidString(secretKey, "The secret key must be a valid hex string.")
 
   // length check
-  assertLength(
+  assert.length(
     secretKey,
-    ALGORITHM_CONSTANT.LENGTH_SECRET_KEY,
-    `The secret key must be ${ALGORITHM_CONSTANT.LENGTH_SECRET_KEY / 2} bytes.`,
+    CONSTANT.LENGTH_SECRET_KEY,
+    `The secret key must be ${CONSTANT.LENGTH_SECRET_KEY / 2} bytes.`,
   )
   return derive_public_key(secretKey)
 }
@@ -79,13 +77,13 @@ export function derivePublicKey(secretKey: string): string {
  *
  * @returns {secretKey: string, publicKey: string} An object containing the secret key and the public key.
  */
-export function generateKeypair(
+export function createPair(
   material: string,
   info?: string,
   dst?: string,
-  cipher: Cipher = Cipher.XOF_SHAKE_256,
+  cipher: CONSTANT.Cipher = CONSTANT.Cipher.XOF_SHAKE_256,
 ): { secretKey: string; publicKey: string } {
-  const secretKey = generateSecretKey(material, info, dst, cipher)
-  const publicKey = derivePublicKey(secretKey)
+  const secretKey = generateSecret(material, info, dst, cipher)
+  const publicKey = derivePublic(secretKey)
   return { secretKey, publicKey }
 }
