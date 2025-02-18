@@ -5,7 +5,6 @@ import {
   verify as core_verify,
 } from "../pkg/bbs_signature.js"
 
-import * as assert from "./assertion.ts"
 import * as CONSTANT from "./constants.ts"
 
 /**
@@ -28,31 +27,6 @@ export function sign(
   messages?: Array<string>,
   cipher: CONSTANT.Cipher = CONSTANT.Cipher.XOF_SHAKE_256,
 ): string {
-  // existence check
-  assert.exist(secretKey, "The secret key must be provided.")
-  assert.exist(publicKey, "The public key must be provided.")
-
-  // hex string check
-  assert.isValidString(secretKey, "The secret key must be a valid hex string.")
-  assert.isValidString(publicKey, "The public key must be a valid hex string.")
-  assert.isValidString(header, "The header must be a valid hex string.")
-  if (messages) messages.forEach((message) => assert.isValidString(message, "The messages must be valid hex strings."))
-
-  // cipher check
-  assert.cipher(cipher)
-
-  // length check
-  assert.length(
-    secretKey,
-    CONSTANT.LENGTH_SECRET_KEY,
-    `The secret key must be ${CONSTANT.LENGTH_SECRET_KEY / 2} bytes long.`,
-  )
-  assert.length(
-    publicKey,
-    CONSTANT.LENGTH_PUBLIC_KEY,
-    `The public key must be ${CONSTANT.LENGTH_PUBLIC_KEY / 2} bytes long.`,
-  )
-
   return core_sign(secretKey, publicKey, header, messages, cipher)
 }
 
@@ -76,31 +50,6 @@ export function verify(
   messages?: Array<string>,
   cipher: CONSTANT.Cipher = CONSTANT.Cipher.XOF_SHAKE_256,
 ): boolean {
-  // existence check
-  assert.exist(publicKey, "The public key must be provided.")
-  assert.exist(signature, "The signature must be provided.")
-
-  // hex string check
-  assert.isValidString(publicKey, "The public key must be a valid hex string.")
-  assert.isValidString(signature, "The signature must be a valid hex string.")
-  assert.isValidString(header, "The header must be a valid hex string.")
-  if (messages) messages.forEach((message) => assert.isValidString(message, "The messages must be valid hex strings."))
-
-  // cipher check
-  assert.cipher(cipher)
-
-  // length check
-  assert.length(
-    publicKey,
-    CONSTANT.LENGTH_PUBLIC_KEY,
-    `The public key must be ${CONSTANT.LENGTH_PUBLIC_KEY / 2} bytes long.`,
-  )
-  assert.length(
-    signature,
-    CONSTANT.LENGTH_SIGNATURE,
-    `The signature must be ${CONSTANT.LENGTH_SIGNATURE / 2} bytes long.`,
-  )
-
   return core_verify(publicKey, signature, header, messages, cipher)
 }
 
@@ -133,39 +82,6 @@ export function prove(
   disclosedIndexes?: Array<number>,
   cipher: CONSTANT.Cipher = CONSTANT.Cipher.XOF_SHAKE_256,
 ): string {
-  // existence check
-  assert.exist(publicKey, "The public key must be provided.")
-  assert.exist(signature, "The signature must be provided.")
-
-  // hex string check
-  assert.isValidString(publicKey, "The public key must be a valid hex string.")
-  assert.isValidString(signature, "The signature must be a valid hex string.")
-  assert.isValidString(header, "The header must be a valid hex string.")
-  assert.isValidString(presentationHeader, "The presentation header must be a valid hex string.")
-  if (messages) messages.forEach((message) => assert.isValidString(message, "The messages must be valid hex strings."))
-
-  // cipher check
-  assert.cipher(cipher)
-
-  // length check
-  assert.length(
-    publicKey,
-    CONSTANT.LENGTH_PUBLIC_KEY,
-    `The public key must be ${CONSTANT.LENGTH_PUBLIC_KEY / 2} bytes long.`,
-  )
-  assert.length(
-    signature,
-    CONSTANT.LENGTH_SIGNATURE,
-    `The signature must be ${CONSTANT.LENGTH_SIGNATURE / 2} bytes long.`,
-  )
-
-  // index check
-  assert.isValidIndexes(
-    disclosedIndexes,
-    messages?.length,
-    "The disclosed indexes must be in ascending order and within bounds.",
-  )
-
   return core_prove(publicKey, signature, header, presentationHeader, messages, disclosedIndexes, cipher)
 }
 
@@ -197,42 +113,5 @@ export function validate(
   disclosedIndexes?: Array<number>,
   cipher: CONSTANT.Cipher = CONSTANT.Cipher.XOF_SHAKE_256,
 ): boolean {
-  // existence check
-  assert.exist(publicKey, "The public key must be provided.")
-  assert.exist(proof, "The proof must be provided.")
-
-  // hex string check
-  assert.isValidString(publicKey, "The public key must be a valid hex string.")
-  assert.isValidString(proof, "The proof must be a valid hex string.")
-  assert.isValidString(header, "The header must be a valid hex string.")
-  assert.isValidString(presentationHeader, "The presentation header must be a valid hex string.")
-  if (disclosedMessages) {
-    disclosedMessages.forEach((message) =>
-      assert.isValidString(message, "The disclosed messages must be valid hex strings.")
-    )
-  }
-
-  // cipher check
-  assert.cipher(cipher)
-
-  // length check
-  assert.length(
-    publicKey,
-    CONSTANT.LENGTH_PUBLIC_KEY,
-    `The public key must be ${CONSTANT.LENGTH_PUBLIC_KEY / 2} bytes long.`,
-  )
-  assert.minLength(
-    proof,
-    CONSTANT.LENGTH_MINIMUM_PROOF,
-    `The proof must be at least ${CONSTANT.LENGTH_MINIMUM_PROOF / 2} bytes long.`,
-  )
-
-  // index check
-  assert.equal(
-    disclosedMessages?.length,
-    disclosedIndexes?.length,
-    "The length of the disclosed messages and indexes must be equal.",
-  )
-
   return core_validate(publicKey, proof, header, presentationHeader, disclosedMessages, disclosedIndexes, cipher)
 }

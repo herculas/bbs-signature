@@ -1,6 +1,5 @@
 import { derive_public_key, generate_secret_key } from "../pkg/bbs_signature.js"
 
-import * as assert from "./assertion.ts"
 import * as CONSTANT from "./constants.ts"
 
 /**
@@ -21,24 +20,6 @@ export function generateSecret(
   dst?: string,
   cipher: CONSTANT.Cipher = CONSTANT.Cipher.XOF_SHAKE_256,
 ): string {
-  // existence check
-  assert.exist(material, "The secret material must be provided.")
-
-  // hex string check
-  assert.isValidString(material, "The secret material must be a valid hex string.")
-  assert.isValidString(info, "The info must be a valid hex string.")
-  assert.isValidString(dst, "The domain separation tag must be a valid hex string.")
-
-  // cipher check
-  assert.cipher(cipher)
-
-  // length check
-  assert.minLength(
-    material,
-    CONSTANT.LENGTH_MINIMUM_KEY_MATERIAL,
-    `The secret material must be at least ${CONSTANT.LENGTH_MINIMUM_KEY_MATERIAL / 2} bytes.`,
-  )
-
   return generate_secret_key(material, info, dst, cipher)
 }
 
@@ -52,18 +33,6 @@ export function generateSecret(
  * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07#name-public-key
  */
 export function derivePublic(secretKey: string): string {
-  // existence check
-  assert.exist(secretKey, "The secret key must be provided.")
-
-  // hex string check
-  assert.isValidString(secretKey, "The secret key must be a valid hex string.")
-
-  // length check
-  assert.length(
-    secretKey,
-    CONSTANT.LENGTH_SECRET_KEY,
-    `The secret key must be ${CONSTANT.LENGTH_SECRET_KEY / 2} bytes.`,
-  )
   return derive_public_key(secretKey)
 }
 

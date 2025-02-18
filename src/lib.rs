@@ -21,6 +21,8 @@ pub fn generate_secret_key(
     dst: &JsValue,
     cipher: &JsValue,
 ) -> JsValue {
+    console_error_panic_hook::set_once();
+
     let material = Vec::import(&material);
     let info = import_option_bytes(&info);
     let dst = import_option_bytes(&dst);
@@ -31,8 +33,11 @@ pub fn generate_secret_key(
 
 #[wasm_bindgen]
 pub fn derive_public_key(raw_secret_key: &JsValue) -> JsValue {
+    console_error_panic_hook::set_once();
+
     let secret_key = Scalar::import(&raw_secret_key);
     let public_key = keypair::derive_public_key(&secret_key);
+
     public_key.to_vec().export()
 }
 
@@ -44,6 +49,8 @@ pub fn sign(
     messages: JsValue,
     cipher: JsValue,
 ) -> JsValue {
+    console_error_panic_hook::set_once();
+
     let secret_key: Scalar = Scalar::import(&secret_key);
     let public_key: Vec<u8> = Vec::import(&public_key);
     let header = import_option_bytes(&header);
@@ -72,6 +79,8 @@ pub fn verify(
     messages: JsValue,
     cipher: JsValue,
 ) -> JsValue {
+    console_error_panic_hook::set_once();
+
     let public_key: Vec<u8> = Vec::import(&public_key);
     let signature: Signature = Signature::import(&signature);
     let header = import_option_bytes(&header);
@@ -101,6 +110,8 @@ pub fn prove(
     disclosed_indexes: JsValue,
     cipher: JsValue,
 ) -> JsValue {
+    console_error_panic_hook::set_once();
+
     let public_key: Vec<u8> = Vec::import(&public_key);
     let signature: Signature = Signature::import(&signature);
     let header = import_option_bytes(&header);
@@ -146,6 +157,8 @@ pub fn validate(
     disclosed_indexes: JsValue,
     cipher: JsValue,
 ) -> JsValue {
+    console_error_panic_hook::set_once();
+
     let public_key: Vec<u8> = Vec::import(&public_key);
     let proof = Proof::import(&proof);
     let header = import_option_bytes(&header);
@@ -181,6 +194,8 @@ pub fn validate(
 
 #[wasm_bindgen]
 pub fn blind_messages(committed_messages: JsValue, cipher: JsValue) -> JsValue {
+    console_error_panic_hook::set_once();
+
     let committed_messages = import_option_vec_bytes(&committed_messages);
     let cipher = import_cipher(&cipher);
 
@@ -202,6 +217,8 @@ pub fn blind_sign(
     messages: JsValue,
     cipher: JsValue,
 ) -> JsValue {
+    console_error_panic_hook::set_once();
+
     let secret_key: Scalar = Scalar::import(&secret_key);
     let public_key: Vec<u8> = Vec::import(&public_key);
     let header = import_option_bytes(&header);
@@ -235,6 +252,8 @@ pub fn blind_verify(
     prover_blind: JsValue,
     cipher: JsValue,
 ) -> JsValue {
+    console_error_panic_hook::set_once();
+
     let public_key: Vec<u8> = Vec::import(&public_key);
     let signature: Signature = Signature::import(&signature);
     let header = import_option_bytes(&header);
@@ -275,6 +294,8 @@ pub fn blind_prove(
     prover_blind: JsValue,
     cipher: JsValue,
 ) -> JsValue {
+    console_error_panic_hook::set_once();
+
     let public_key: Vec<u8> = Vec::import(&public_key);
     let signature: Signature = Signature::import(&signature);
     let header = import_option_bytes(&header);
@@ -344,6 +365,8 @@ pub fn blind_validate(
     disclosed_commitment_indexes: JsValue,
     cipher: JsValue,
 ) -> JsValue {
+    console_error_panic_hook::set_once();
+
     let public_key: Vec<u8> = Vec::import(&public_key);
     let proof = Proof::import(&proof);
     let header = import_option_bytes(&header);
@@ -404,6 +427,8 @@ pub fn blind_messages_with_nym(
     prover_nym: JsValue,
     cipher: JsValue,
 ) -> JsValue {
+    console_error_panic_hook::set_once();
+
     let committed_messages = import_option_vec_bytes(&committed_messages);
     let prover_nym = import_option_scalar(&prover_nym);
     let cipher = import_cipher(&cipher);
@@ -431,6 +456,8 @@ pub fn blind_sign_with_nym(
     messages: JsValue,
     cipher: JsValue,
 ) -> JsValue {
+    console_error_panic_hook::set_once();
+
     let secret_key: Scalar = Scalar::import(&secret_key);
     let public_key: Vec<u8> = Vec::import(&public_key);
     let header = import_option_bytes(&header);
@@ -466,6 +493,8 @@ pub fn blind_verify_with_nym(
     prover_blind: JsValue,
     cipher: JsValue,
 ) -> JsValue {
+    console_error_panic_hook::set_once();
+
     let public_key: Vec<u8> = Vec::import(&public_key);
     let signature: Signature = Signature::import(&signature);
     let header = import_option_bytes(&header);
@@ -518,6 +547,8 @@ pub fn blind_prove_with_nym(
     prover_blind: JsValue,
     cipher: JsValue,
 ) -> JsValue {
+    console_error_panic_hook::set_once();
+
     let public_key: Vec<u8> = Vec::import(&public_key);
     let signature: Signature = Signature::import(&signature);
     let header = import_option_bytes(&header);
@@ -592,6 +623,8 @@ pub fn blind_validate_with_nym(
     disclosed_commitment_indexes: JsValue,
     cipher: JsValue,
 ) -> JsValue {
+    console_error_panic_hook::set_once();
+
     let public_key: Vec<u8> = Vec::import(&public_key);
     let proof = Proof::import(&proof);
     let header = import_option_bytes(&header);

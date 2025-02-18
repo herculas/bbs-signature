@@ -8,4 +8,4 @@ export * as basic from "./basic.ts"
 export * as blind from "./blind.ts"
 
 // BBS (with pseudonym) signature generation and verification; BBS (with pseudonym) proof generation and verification
-export * as pseudonym from "./pseudonym.ts"
+export * as pseudo from "./pseudonym.ts"
