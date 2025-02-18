@@ -1,17 +1,17 @@
+/**
+ * BBS key generation and derivation.
+ * @module key
+ *
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07
+ */
+
 import { derive_public_key, generate_secret_key } from "../pkg/bbs_signature.js"
 
 import * as CONSTANT from "./constants.ts"
 
 /**
- * BBS key generation and derivation.
- * @namespace key
- * 
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07
- */
-
-/**
  * Generate a secret key deterministically from a secret material and an optional key information string.
- * 
+ *
  * @memberof key
  *
  * @param {string} material A secret string from which to generate the secret key, at least 32 bytes.
@@ -34,7 +34,7 @@ export function generateSecret(
 
 /**
  * Generate a public key corresponding to the given private key.
- * 
+ *
  * @memberof key
  *
  * @param {string} secretKey The private key.
@@ -49,7 +49,7 @@ export function derivePublic(secretKey: string): string {
 
 /**
  * Generate a keypair deterministically from a secret key material string.
- * 
+ *
  * @memberof key
  *
  * @param {string} material A secret string from which to generate the secret key, at least 32 bytes.

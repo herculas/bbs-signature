@@ -1,13 +1,13 @@
-import { blind_messages, blind_prove, blind_sign, blind_validate, blind_verify } from "../pkg/bbs_signature.js"
-
-import * as CONSTANT from "./constants.ts"
-
 /**
  * Blind BBS signing and verifying operations, as well as blind BBS proof generation and validation.
- * @namespace blind
+ * @module blind
  *
  * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-00
  */
+
+import { blind_messages, blind_prove, blind_sign, blind_validate, blind_verify } from "../pkg/bbs_signature.js"
+
+import * as CONSTANT from "./constants.ts"
 
 /**
  * Commit to a set of messages by the prover to blind these messages before sending them to the signer. Note that this

@@ -1,3 +1,11 @@
+/**
+ * Generating and verifying blind BBS signatures with pseudonyms, as well as generating and validating blind BBS proofs
+ * with pseudonym.
+ * @module pseudo
+ *
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-00
+ */
+
 import {
   blind_messages_with_nym,
   blind_prove_with_nym,
@@ -7,14 +15,6 @@ import {
 } from "../pkg/bbs_signature.js"
 
 import * as CONSTANT from "./constants.ts"
-
-/**
- * Generating and verifying blind BBS signatures with pseudonyms, as well as generating and validating blind BBS proofs
- * with pseudonym.
- * @namespace pseudo
- *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-00
- */
 
 /**
  * Commit a set of messages that the prover wants to include in the signature, without revealing these messages to the
