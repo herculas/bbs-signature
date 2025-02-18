@@ -10,6 +10,9 @@ export const LENGTH_MINIMUM_KEY_MATERIAL = 64
 export const LENGTH_MINIMUM_PROOF = 4 * LENGTH_SCALAR + 3 * LENGTH_G1_POINT
 export const LENGTH_MINIMUM_COMMIT_WITH_PROOF = LENGTH_G1_POINT + 2 * LENGTH_SCALAR
 
+/**
+ * The cipher suites used for the BBS signature scheme.
+ */
 export enum Cipher {
   XOF_SHAKE_256 = "BLS12_381_G1_XOF_SHAKE_256",
   XMD_SHA_256 = "BLS12_381_G1_XMD_SHA_256",

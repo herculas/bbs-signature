@@ -8,7 +8,16 @@ import {
 import * as CONSTANT from "./constants.ts"
 
 /**
+ * Basic BBS signing and verifying operations, as well as BBS proof generation and validation.
+ * @namespace basic
+ * 
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07
+ */
+
+/**
  * Generate a BBS Signature from a secret key, over a header and a set of messages.
+ * 
+ * @memberof basic
  *
  * @param {string} secretKey A string representing the secret key.
  * @param {string} publicKey A string representing the public key.
@@ -32,6 +41,8 @@ export function sign(
 
 /**
  * Validate a BBS Signature, given a public key, a header, and a set of messages.
+ * 
+ * @memberof basic
  *
  * @param {string} publicKey A string representing the public key.
  * @param {string} signature A string representing the signature.
@@ -60,6 +71,8 @@ export function verify(
  * Other than the signer's public key, the BBS signature and the signed header and messages, the operation also accepts
  * a presentation header, which will be bound to the resulting proof. To indicate which of the messages are to be
  * disclosed, the operation accepts a list of integers in ascending order, representing the indexes of those messages.
+ * 
+ * @memberof basic
  *
  * @param {string} publicKey A string representing the public key.
  * @param {string} signature A string representing the signature.
@@ -91,6 +104,8 @@ export function prove(
  *
  * Validating the proof guarantees authenticity and integrity of the header and disclosed messages, as well as knowledge
  * of a valid BBS signature.
+ * 
+ * @memberof basic
  *
  * @param {string} publicKey A string representing the public key.
  * @param {string} proof A string representing the proof.
