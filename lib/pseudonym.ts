@@ -26,7 +26,7 @@ import * as CONSTANT from "./constants.ts"
  * @param {string} [proverNym] The prover's part of the pseudonym secret.
  * @param {Cipher} [cipher] The cipher suite. If not specified, it defaults to `BLS12_381_G1_XOF_SHAKE_256`.
  *
- * @returns {string} A serialized commitment and its proof-of-correctness, along with a secret prover blindness.
+ * @returns {object} A serialized commitment and its proof-of-correctness, along with a secret prover blindness.
  *
  * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-00#name-commitment
  */
@@ -41,11 +41,7 @@ export function commit(
   const res = blind_messages_with_nym(committedMessages, proverNym, cipher)
   const commitmentWithProof = res.slice(0, -CONSTANT.LENGTH_SCALAR)
   const proverBlindness = res.slice(-CONSTANT.LENGTH_SCALAR)
-
-  return {
-    commitmentWithProof,
-    proverBlindness,
-  }
+  return { commitmentWithProof, proverBlindness }
 }
 
 /**
@@ -64,7 +60,7 @@ export function commit(
  * @param {Array<string>} [messages] A vector of hex-encoded strings representing the messages.
  * @param {Cipher} [cipher] The cipher suite. If not specified, it defaults to `BLS12_381_G1_XOF_SHAKE_256`.
  *
- * @returns {string} A signature encoded as a string.
+ * @returns {object} A serialized signature and the signer pseudonym entropy.
  *
  * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-00#name-blind-issuance
  */
@@ -101,7 +97,7 @@ export function sign(
  * @param {string} [proverBlindness] A string representing the secret prover blindness.
  * @param {Cipher} [cipher] The cipher suite. If not specified, it defaults to `BLS12_381_G1_XOF_SHAKE_256`.
  *
- * @returns {boolean} `true` if the signature is valid, `false` otherwise.
+ * @returns {string | undefined} The final pseudonym secret if the signature is valid, `undefined` otherwise.
  *
  * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-00#name-verification-and-finalizati
  */
@@ -157,7 +153,7 @@ export function verify(
  * @param {string} [proverBlindness] A string representing the secret prover blindness.
  * @param {Cipher} [cipher] The cipher suite. If not specified, it defaults to `BLS12_381_G1_XOF_SHAKE_256`.
  *
- * @returns {string} A hex-encoded proof.
+ * @returns {object} A hex-encoded proof and a public pseudonym.
  *
  * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-00#name-proof-generation-with-pseud
  */

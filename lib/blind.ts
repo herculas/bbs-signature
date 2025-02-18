@@ -19,7 +19,7 @@ import * as CONSTANT from "./constants.ts"
  * @param {Array<string>} [committedMessages] A vector of octet strings.
  * @param {Cipher} [cipher] The cipher suite. If not specified, it defaults to `BLS12_381_G1_XOF_SHAKE_256`.
  *
- * @returns {string} A serialized commitment and its proof-of-correctness, along with a secret prover blindness.
+ * @returns {object} A serialized commitment and its proof-of-correctness, along with a secret prover blindness.
  *
  * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-00#name-commitment-computation
  */
@@ -33,11 +33,7 @@ export function commit(
   const res = blind_messages(committedMessages, cipher)
   const commitmentWithProof = res.slice(0, -CONSTANT.LENGTH_SCALAR)
   const proverBlindness = res.slice(-CONSTANT.LENGTH_SCALAR)
-
-  return {
-    commitmentWithProof,
-    proverBlindness,
-  }
+  return { commitmentWithProof, proverBlindness }
 }
 
 /**
