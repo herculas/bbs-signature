@@ -4,9 +4,9 @@
 
 A BBS Signature Scheme foundation library written in Rust, compiled to WASM to provide JavaScript and TypeScript
 interfaces. This library is compatible with the specifications of
-[The BBS Signature Scheme (version 7)](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07),
-[Blind BBS Signatures (version 0)](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-00), and
-[BBS Per Verifier Linkability (version 0)](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-00).
+[The BBS Signature Scheme (version 8)](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-08),
+[Blind BBS Signatures (version 1)](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-01), and
+[BBS Per Verifier Linkability (version 1)](https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-01).
 
 ## Background
 

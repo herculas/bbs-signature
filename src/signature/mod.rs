@@ -162,13 +162,3 @@ pub(crate) fn export_blindness(
     serialized.extend_from_slice(&prover_blind.serialize());
     JsValue::from_str(&bytes_to_hex(&serialized))
 }
-
-pub(crate) fn export_signature_with_entropy(
-    signature: &Signature,
-    signer_nym_entropy: &Scalar,
-) -> JsValue {
-    let mut serialized = Vec::new();
-    serialized.extend_from_slice(&signature.serialize());
-    serialized.extend_from_slice(&signer_nym_entropy.serialize());
-    JsValue::from_str(&bytes_to_hex(&serialized))
-}

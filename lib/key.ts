@@ -21,7 +21,7 @@ import * as CONSTANT from "./constants.ts"
  *
  * @returns {string} A hex-encoded uniformly random integer in the range [1, r - 1].
  *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07#name-secret-key
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-08#name-secret-key
  */
 export function generateSecret(
   material: string,
@@ -41,7 +41,7 @@ export function generateSecret(
  *
  * @returns {string} The hex-encoded public key.
  *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07#name-public-key
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-08#name-public-key
  */
 export function derivePublic(secretKey: string): string {
   return derive_public_key(secretKey)

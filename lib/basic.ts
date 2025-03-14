@@ -2,7 +2,7 @@
  * Basic BBS signing and verifying operations, as well as BBS proof generation and validation.
  * @module basic
  *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-08
  */
 
 import {
@@ -27,7 +27,7 @@ import * as CONSTANT from "./constants.ts"
  *
  * @returns {string} A signature encoded as a string.
  *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07#name-signature-generation-sign
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-08#name-signature-generation-sign
  */
 export function sign(
   secretKey: string,
@@ -52,7 +52,7 @@ export function sign(
  *
  * @returns {boolean} `true` if the signature is valid, `false` otherwise.
  *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07#name-signature-verification-veri
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-08#name-signature-verification-veri
  */
 export function verify(
   publicKey: string,
@@ -84,7 +84,7 @@ export function verify(
  *
  * @returns {string} A hex-encoded proof.
  *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07#name-proof-generation-proofgen
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-08#name-proof-generation-proofgen
  */
 export function prove(
   publicKey: string,
@@ -117,7 +117,7 @@ export function prove(
  *
  * @returns {boolean} `true` if the proof is valid, `false` otherwise.
  *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-07#name-proof-verification-proofver
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-signatures-08#name-proof-verification-proofver
  */
 export function validate(
   publicKey: string,

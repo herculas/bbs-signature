@@ -2,7 +2,7 @@
  * Blind BBS signing and verifying operations, as well as blind BBS proof generation and validation.
  * @module blind
  *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-00
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-01
  */
 
 import { blind_messages, blind_prove, blind_sign, blind_validate, blind_verify } from "../pkg/bbs_signature.js"
@@ -21,7 +21,7 @@ import * as CONSTANT from "./constants.ts"
  *
  * @returns {object} A serialized commitment and its proof-of-correctness, along with a secret prover blindness.
  *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-00#name-commitment-computation
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-01#name-commitment-computation
  */
 export function commit(
   committedMessages?: Array<string>,
@@ -51,7 +51,7 @@ export function commit(
  *
  * @returns {string} A signature encoded as a string.
  *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-00#name-blind-signature-generation
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-01#name-blind-signature-generation
  */
 export function sign(
   secretKey: string,
@@ -80,7 +80,7 @@ export function sign(
  *
  * @returns {boolean} `true` if the signature is valid, `false` otherwise.
  *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-00#name-blind-signature-verificatio
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-01#name-blind-signature-verificatio
  */
 export function verify(
   publicKey: string,
@@ -121,7 +121,7 @@ export function verify(
  *
  * @returns {string} A hex-encoded proof.
  *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-00#name-proof-generation
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-01#name-proof-generation
  */
 export function prove(
   publicKey: string,
@@ -172,7 +172,7 @@ export function prove(
  *
  * @returns {boolean} `true` if the proof is valid, `false` otherwise.
  *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-00#name-proof-verification
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-blind-signatures-01#name-proof-verification
  */
 export function validate(
   publicKey: string,

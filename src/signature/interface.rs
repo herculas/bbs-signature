@@ -127,7 +127,8 @@ pub fn verify(
 /// - `cipher`: a cipher suite.
 /// - `random_scalar_sampler`: a function that returns a list of random scalars.
 ///
-/// Return a tuple comprising from an octet string and a random scalar in that order.
+/// Return a tuple comprising from a commitment with proof, and a random scalar representing the secret prover
+/// blindness, in that order.
 pub fn blind_messages(
     committed_messages: Option<&Vec<&[u8]>>,
     api_id: Option<&[u8]>,
@@ -343,7 +344,8 @@ pub fn blind_verify(
 /// - `cipher`: a cipher suite.
 /// - `random_scalar_sampler`: a function that returns a list of random scalars.
 ///
-/// Return a tuple comprising from an octet string and a random scalar in that order.
+/// Return a tuple comprising from a commitment with proof, and a random scalar representing the secret prover
+/// blindness, in that order.
 pub fn blind_messages_with_nym(
     committed_messages: Option<&Vec<&[u8]>>,
     prover_nym: Option<&Scalar>,
@@ -386,23 +388,29 @@ pub fn blind_messages_with_nym(
 /// Generate a signature from a secret key, the commitment with proof, and optionally over a header and a vector of
 /// messages.
 ///
+/// Note that, typically, the `signer_nym_entropy` value is a fresh random scalar, however in the case of "re-issue" of
+/// a signature for a prover who wants to keep their same pseudonymous identity, this value can be reused for the same
+/// prover if desired.
+///
 /// - `secret_key`: a scalar representing the secret key.
 /// - `public_key`: an octet string representing the public key.
+/// - `signer_nym_entropy`: a scalar representing the signer's part of the pseudonym secret.
 /// - `commitment_with_proof`: an octet string, representing a serialized commitment and commitment proof, as the first
 ///         element outputted by the commit operation. If not supplied, it defaults to an empty octet string.
 /// - `header`: an octet string containing the context and application specific information.
 /// - `messages`: a list of octet strings containing the messages to be signed.
 /// - `cipher`: a cipher suite.
 ///
-/// Return a blind BBS signature and the signer's part of the pseudonym secret.
+/// Return a blinded BBS signature.
 pub fn blind_sign_with_nym(
     secret_key: &Scalar,
     public_key: &[u8],
+    signer_nym_entropy: &Scalar,
     commitment_with_proof: Option<&[u8]>,
     header: Option<&[u8]>,
     messages: Option<&Vec<&[u8]>>,
     cipher: &Cipher,
-) -> (Signature, Scalar) {
+) -> Signature {
     let default_commitment_with_proof = vec![];
     let default_messages = vec![];
 
@@ -441,12 +449,12 @@ pub fn blind_sign_with_nym(
     // 3. commit := deserialize_and_validate_commit(commitment_with_proof, blind_generators, api_id).
     // 4. If commit is INVALID, return INVALID.
     // 5. message_scalars := messages_to_scalars(messages, api_id).
-    // 6. res := calculate_B(generators, commit, blind_generators[-1], message_scalars).
+    // 6. res := calculate_B(signer_nym_entropy, generators, commit, blind_generators[-1], message_scalars).
     // 7. If res is INVALID, return INVALID.
-    // 8. (B, signer_nym_entropy) := res.
+    // 8. B := res.
     // 9. blind_sig := finalize_blind_sign(secret_key, public_key, B, generators, blind_generators, header, api_id).
     // 10. If blind_sig is INVALID, return INVALID.
-    // 11. Return (blind_sig, signer_nym_entropy).
+    // 11. Return blind_sig.
 
     let generators = create_generators(l + 1, Some(&api_id), cipher);
     let blind_generators = create_generators(m + 1, Some(&blind_api_id), cipher);
@@ -460,7 +468,8 @@ pub fn blind_sign_with_nym(
 
     let message_scalars = messages_to_scalars(messages, Some(&api_id), cipher);
 
-    let (b, signer_nym_entropy) = calculate_b_with_nym(
+    let b = calculate_b_with_nym(
+        &signer_nym_entropy,
         &generators,
         Some(&commitment),
         Some(blind_generators.last().unwrap()),
@@ -479,7 +488,7 @@ pub fn blind_sign_with_nym(
         cipher,
     );
 
-    (blind_sig, signer_nym_entropy)
+    blind_sig
 }
 
 /// Verify the blind BBS signature and calculate the final pseudonym secret value used to calculate the pseudonym value
@@ -1607,7 +1616,7 @@ mod tests {
     }
 
     #[test]
-    fn shake_256_pseudonym_commit_pid_message_with_proof() {
+    fn shake_256_pseudonym_commit_no_committed_messages_with_proof() {
         let cipher = BLS12_381_G1_XOF_SHAKE_256;
         let api_id = [cipher.id, PADDING_API_ID, PADDING_PSEUDONYM].concat();
         let committed_messages: Vec<&[u8]> = vec![];
@@ -1648,7 +1657,67 @@ mod tests {
     }
 
     #[test]
-    fn shake_256_pseudonym_hidden_pid_valid_all_message_signature() {
+    fn shake_256_pseudonym_commit_multiple_committed_messages_with_proof() {
+        let cipher = BLS12_381_G1_XOF_SHAKE_256;
+        let api_id = [cipher.id, PADDING_API_ID, PADDING_PSEUDONYM].concat();
+
+        let committed_msg_1 =
+            hex_to_bytes("5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3");
+        let committed_msg_2 = hex_to_bytes("a75d8b634891af92282cc81a675972d1929d3149863c1fc0");
+        let committed_msg_3 = hex_to_bytes("835889a40744813a892eff9deb1edaeb");
+        let committed_msg_4 = hex_to_bytes("e1ca9729410dc6ba");
+        let committed_msg_5 = hex_to_bytes("");
+
+        let committed_messages = vec![
+            committed_msg_1.as_slice(),
+            committed_msg_2.as_slice(),
+            committed_msg_3.as_slice(),
+            committed_msg_4.as_slice(),
+            committed_msg_5.as_slice(),
+        ];
+
+        let prover_nym_bytes =
+            hex_to_bytes("6830ea571e9fca0194d9ebd5c571369d8b81655afe0bbb9c6f5efe934f699418");
+        let prover_nym = Scalar::deserialize(&prover_nym_bytes);
+
+        let (commitment_with_proof, prover_blind) = blind_messages_with_nym(
+            Some(&committed_messages),
+            Some(&prover_nym),
+            Some(&api_id),
+            &cipher,
+            Some(|count: usize| -> Vec<Scalar> {
+                seeded_random_scalars(
+                    b"3.141592653589793238462643383279",
+                    b"BBS_BLS12381G1_XOF:SHAKE-256_SSWU_RO_H2G_HM2S_COMMIT_MOCK_RANDOM_SCALARS_DST_",
+                    count,
+                    &BLS12_381_G1_XOF_SHAKE_256,
+                )
+            }),
+        );
+
+        assert_eq!(
+            prover_blind.to_string(),
+            "0x1ade8b27cccac993dfe3d57be0cd1a200a5cae52d9ea525f106c94f06fea89c3"
+        );
+
+        assert_eq!(
+            bytes_to_hex(&commitment_with_proof.serialize()),
+            "\
+                a9577c3e2f15081c03d2e86789c1d9208bc04409b1ca33c25d06017c8fef5d13\
+                9aee028ac96b9c09636a45846e9a5ee51f83bfd55f12193061e3f707d11d9993\
+                d6e08293de7f3dd0a298c21f369208b43b7b401706a9a0a5dcfa12d28d5a59b0\
+                9da337b435cf4aa2a869842c8e1409004865ce6ff78d345e5c8142c9c440b677\
+                824ce06a8f70c50bbbb01838a91eb0041fd853c2005109d3aec272dd03346f37\
+                fc90828490fbedc4fc88e7307662b785653aba1a28a45bca913b7dd778e8bd14\
+                1652e6f0507c3f836c8852b8ddbf2c62659dbd7b83f096e7b351f2f0dc6046bc\
+                e3c8d0c5bb892a7a3d76d6bac899b3d356b099f88287ac25e6879d5808f83292\
+                7c8e28acae41ab3699b5c0f9da4f58bf67d7e87c5ddb6dadd80fe281e158cc7a\
+                24bc398f84022dc0dc3a123971f7546c"
+        );
+    }
+
+    #[test]
+    fn shake_256_pseudonym_signature_no_prover_committed_messages_no_signer_messages() {
         let cipher = BLS12_381_G1_XOF_SHAKE_256;
 
         let prover_nym_bytes =
@@ -1658,6 +1727,174 @@ mod tests {
         let prover_blindness_bytes =
             "643a0c0bc86a50e0d8c00bfe6c8debd85373597e1aef6cc912838bf7dc376e48";
         let prover_blindness = Scalar::deserialize(&hex_to_bytes(prover_blindness_bytes));
+
+        let signer_nym_entropy_bytes =
+            "3d40961fce6c09eec24a371322732932503b458d7a4cf7891bdaa765b30027c5";
+        let entropy = Scalar::deserialize(&hex_to_bytes(signer_nym_entropy_bytes));
+
+        let messages = &vec![];
+
+        let header = hex_to_bytes("11223344556677889900aabbccddeeff");
+        let secret_key_bytes =
+            hex_to_bytes("60e55110f76883a13d030b2f6bd11883422d5abde717569fc0731f51237169fc");
+        let secret_key = Scalar::deserialize(&secret_key_bytes);
+
+        let public_key_bytes = hex_to_bytes(
+            "\
+                    a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28\
+                    51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f\
+                    1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c",
+        );
+
+        let commitment_with_proof = hex_to_bytes(
+            "\
+            990c1837a8af86843213e5b12fbfc962efcaf8fd0e5812a6237b91b00a47b5a3\
+            4714a60b4c365f72b47a4d9b656dde4753a18a8286aca2bf58e8bb9a3d77a3e0\
+            052aefc427e5e47b666255e53cfcaa7d34d36adc13da01798b8eb041652a57c3\
+            b595ace54ed5eee43370c1697eb5ce996020d88ca5d811c011cde10c6c07dc2f\
+            4acbc89bd5652414d5b8823a250ed40b",
+        );
+
+        let signature = blind_sign_with_nym(
+            &secret_key,
+            &public_key_bytes,
+            &entropy,
+            Some(&commitment_with_proof),
+            Some(&header),
+            Some(&messages),
+            &cipher,
+        );
+
+        assert_eq!(
+            bytes_to_hex(&signature.serialize()),
+            "\
+                b75c2aeb0b79506a85fe900efb954ecdc591e5492c90204221371756226b3b0a\
+                30e39ee578354b7566fd1766bf1d9212424fea257ef8c483c879ffa3c2f5c9d7\
+                a64cea4770e391ca7b3a305a3306496b"
+        );
+
+        let verification_res = blind_verify_with_nym(
+            &public_key_bytes,
+            &signature,
+            Some(&header),
+            Some(&messages),
+            None,
+            Some(&prover_nym),
+            Some(&entropy),
+            Some(&prover_blindness),
+            &cipher,
+        );
+
+        assert!(verification_res.is_some());
+    }
+
+    #[test]
+    fn shake_256_pseudonym_signature_multiple_prover_committed_messages_no_signer_messages() {
+        let cipher = BLS12_381_G1_XOF_SHAKE_256;
+
+        let prover_nym_bytes =
+            hex_to_bytes("6830ea571e9fca0194d9ebd5c571369d8b81655afe0bbb9c6f5efe934f699418");
+        let prover_nym = Scalar::deserialize(&prover_nym_bytes);
+
+        let prover_blindness_bytes =
+            "1ade8b27cccac993dfe3d57be0cd1a200a5cae52d9ea525f106c94f06fea89c3";
+        let prover_blindness = Scalar::deserialize(&hex_to_bytes(prover_blindness_bytes));
+
+        let signer_nym_entropy_bytes =
+            "3d40961fce6c09eec24a371322732932503b458d7a4cf7891bdaa765b30027c5";
+        let entropy = Scalar::deserialize(&hex_to_bytes(signer_nym_entropy_bytes));
+
+        let messages = &vec![];
+
+        let committed_msg_1 =
+            hex_to_bytes("5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3");
+        let committed_msg_2 = hex_to_bytes("a75d8b634891af92282cc81a675972d1929d3149863c1fc0");
+        let committed_msg_3 = hex_to_bytes("835889a40744813a892eff9deb1edaeb");
+        let committed_msg_4 = hex_to_bytes("e1ca9729410dc6ba");
+        let committed_msg_5 = hex_to_bytes("");
+
+        let committed_messages = vec![
+            committed_msg_1.as_slice(),
+            committed_msg_2.as_slice(),
+            committed_msg_3.as_slice(),
+            committed_msg_4.as_slice(),
+            committed_msg_5.as_slice(),
+        ];
+
+        let header = hex_to_bytes("11223344556677889900aabbccddeeff");
+        let secret_key_bytes =
+            hex_to_bytes("60e55110f76883a13d030b2f6bd11883422d5abde717569fc0731f51237169fc");
+        let secret_key = Scalar::deserialize(&secret_key_bytes);
+
+        let public_key_bytes = hex_to_bytes(
+            "\
+                    a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28\
+                    51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f\
+                    1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c",
+        );
+
+        let commitment_with_proof = hex_to_bytes(
+            "\
+                    a9577c3e2f15081c03d2e86789c1d9208bc04409b1ca33c25d06017c8fef5d13\
+                    9aee028ac96b9c09636a45846e9a5ee51f83bfd55f12193061e3f707d11d9993\
+                    d6e08293de7f3dd0a298c21f369208b43b7b401706a9a0a5dcfa12d28d5a59b0\
+                    9da337b435cf4aa2a869842c8e1409004865ce6ff78d345e5c8142c9c440b677\
+                    824ce06a8f70c50bbbb01838a91eb0041fd853c2005109d3aec272dd03346f37\
+                    fc90828490fbedc4fc88e7307662b785653aba1a28a45bca913b7dd778e8bd14\
+                    1652e6f0507c3f836c8852b8ddbf2c62659dbd7b83f096e7b351f2f0dc6046bc\
+                    e3c8d0c5bb892a7a3d76d6bac899b3d356b099f88287ac25e6879d5808f83292\
+                    7c8e28acae41ab3699b5c0f9da4f58bf67d7e87c5ddb6dadd80fe281e158cc7a\
+                    24bc398f84022dc0dc3a123971f7546c",
+        );
+
+        let signature = blind_sign_with_nym(
+            &secret_key,
+            &public_key_bytes,
+            &entropy,
+            Some(&commitment_with_proof),
+            Some(&header),
+            Some(&messages),
+            &cipher,
+        );
+
+        assert_eq!(
+            bytes_to_hex(&signature.serialize()),
+            "\
+                b4b026980b38e88dd7d89c953f8c6750352aa9235865bab030999850e832578a\
+                374fcbeb3882dedc72f50d1fc8e2083932227a61a93ba23f7fac72f587b40de4\
+                bf36bdb5567ef4721d0615b91ecf1811"
+        );
+
+        let verification_res = blind_verify_with_nym(
+            &public_key_bytes,
+            &signature,
+            Some(&header),
+            Some(&messages),
+            Some(&committed_messages),
+            Some(&prover_nym),
+            Some(&entropy),
+            Some(&prover_blindness),
+            &cipher,
+        );
+
+        assert!(verification_res.is_some());
+    }
+
+    #[test]
+    fn shake_256_pseudonym_signature_no_prover_committed_messages_multiple_signer_messages() {
+        let cipher = BLS12_381_G1_XOF_SHAKE_256;
+
+        let prover_nym_bytes =
+            hex_to_bytes("6830ea571e9fca0194d9ebd5c571369d8b81655afe0bbb9c6f5efe934f699418");
+        let prover_nym = Scalar::deserialize(&prover_nym_bytes);
+
+        let prover_blindness_bytes =
+            "643a0c0bc86a50e0d8c00bfe6c8debd85373597e1aef6cc912838bf7dc376e48";
+        let prover_blindness = Scalar::deserialize(&hex_to_bytes(prover_blindness_bytes));
+
+        let signer_nym_entropy_bytes =
+            "3d40961fce6c09eec24a371322732932503b458d7a4cf7891bdaa765b30027c5";
+        let entropy = Scalar::deserialize(&hex_to_bytes(signer_nym_entropy_bytes));
 
         let msg_1 =
             hex_to_bytes("9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02");
@@ -1687,14 +1924,13 @@ mod tests {
 
         let header = hex_to_bytes("11223344556677889900aabbccddeeff");
         let secret_key_bytes =
-            hex_to_bytes("2eee0f60a8a3a8bec0ee942bfd46cbdae9a0738ee68f5a64e7238311cf09a079");
+            hex_to_bytes("60e55110f76883a13d030b2f6bd11883422d5abde717569fc0731f51237169fc");
         let secret_key = Scalar::deserialize(&secret_key_bytes);
-
         let public_key_bytes = hex_to_bytes(
             "\
-                    92d37d1d6cd38fea3a873953333eab23a4c0377e3e049974eb62bd45949cdeb1\
-                    8fb0490edcd4429adff56e65cbce42cf188b31bddbd619e419b99c2c41b38179\
-                    eb001963bc3decaae0d9f702c7a8c004f207f46c734a5eae2e8e82833f3e7ea5",
+                    a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28\
+                    51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f\
+                    1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c",
         );
 
         let commitment_with_proof = hex_to_bytes(
@@ -1706,13 +1942,22 @@ mod tests {
             4acbc89bd5652414d5b8823a250ed40b",
         );
 
-        let (signature, entropy) = blind_sign_with_nym(
+        let signature = blind_sign_with_nym(
             &secret_key,
             &public_key_bytes,
+            &entropy,
             Some(&commitment_with_proof),
             Some(&header),
             Some(&messages),
             &cipher,
+        );
+
+        assert_eq!(
+            bytes_to_hex(&signature.serialize()),
+            "\
+                92a8e449a715421cd49fe58433e5ed2300a67d36d589eac87536bcaab616cc84\
+                6785e17449a9baa83826ee177f79445d27bdd783b7730048f7dfd355fb7494d1\
+                50f15fb203f4d0aad2a65aa436ffb208"
         );
 
         let verification_res = blind_verify_with_nym(
@@ -1721,6 +1966,121 @@ mod tests {
             Some(&header),
             Some(&messages),
             None,
+            Some(&prover_nym),
+            Some(&entropy),
+            Some(&prover_blindness),
+            &cipher,
+        );
+
+        assert!(verification_res.is_some());
+    }
+
+    #[test]
+    fn shake_256_pseudonym_signature_multiple_prover_committed_messages_multiple_signer_messages() {
+        let cipher = BLS12_381_G1_XOF_SHAKE_256;
+
+        let prover_nym_bytes =
+            hex_to_bytes("6830ea571e9fca0194d9ebd5c571369d8b81655afe0bbb9c6f5efe934f699418");
+        let prover_nym = Scalar::deserialize(&prover_nym_bytes);
+
+        let prover_blindness_bytes =
+            "1ade8b27cccac993dfe3d57be0cd1a200a5cae52d9ea525f106c94f06fea89c3";
+        let prover_blindness = Scalar::deserialize(&hex_to_bytes(prover_blindness_bytes));
+
+        let signer_nym_entropy_bytes =
+            "3d40961fce6c09eec24a371322732932503b458d7a4cf7891bdaa765b30027c5";
+        let entropy = Scalar::deserialize(&hex_to_bytes(signer_nym_entropy_bytes));
+
+        let msg_1 =
+            hex_to_bytes("9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02");
+        let msg_2 =
+            hex_to_bytes("c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80");
+        let msg_3 = hex_to_bytes("7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73");
+        let msg_4 = hex_to_bytes("77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c");
+        let msg_5 = hex_to_bytes("496694774c5604ab1b2544eababcf0f53278ff50");
+        let msg_6 = hex_to_bytes("515ae153e22aae04ad16f759e07237b4");
+        let msg_7 = hex_to_bytes("d183ddc6e2665aa4e2f088af");
+        let msg_8 = hex_to_bytes("ac55fb33a75909ed");
+        let msg_9 = hex_to_bytes("96012096");
+        let msg_10 = hex_to_bytes("");
+
+        let messages = &vec![
+            msg_1.as_slice(),
+            msg_2.as_slice(),
+            msg_3.as_slice(),
+            msg_4.as_slice(),
+            msg_5.as_slice(),
+            msg_6.as_slice(),
+            msg_7.as_slice(),
+            msg_8.as_slice(),
+            msg_9.as_slice(),
+            msg_10.as_slice(),
+        ];
+
+        let committed_msg_1 =
+            hex_to_bytes("5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3");
+        let committed_msg_2 = hex_to_bytes("a75d8b634891af92282cc81a675972d1929d3149863c1fc0");
+        let committed_msg_3 = hex_to_bytes("835889a40744813a892eff9deb1edaeb");
+        let committed_msg_4 = hex_to_bytes("e1ca9729410dc6ba");
+        let committed_msg_5 = hex_to_bytes("");
+
+        let committed_messages = vec![
+            committed_msg_1.as_slice(),
+            committed_msg_2.as_slice(),
+            committed_msg_3.as_slice(),
+            committed_msg_4.as_slice(),
+            committed_msg_5.as_slice(),
+        ];
+
+        let header = hex_to_bytes("11223344556677889900aabbccddeeff");
+        let secret_key_bytes =
+            hex_to_bytes("60e55110f76883a13d030b2f6bd11883422d5abde717569fc0731f51237169fc");
+        let secret_key = Scalar::deserialize(&secret_key_bytes);
+        let public_key_bytes = hex_to_bytes(
+            "\
+                    a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28\
+                    51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f\
+                    1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c",
+        );
+
+        let commitment_with_proof = hex_to_bytes(
+            "\
+                    a9577c3e2f15081c03d2e86789c1d9208bc04409b1ca33c25d06017c8fef5d13\
+                    9aee028ac96b9c09636a45846e9a5ee51f83bfd55f12193061e3f707d11d9993\
+                    d6e08293de7f3dd0a298c21f369208b43b7b401706a9a0a5dcfa12d28d5a59b0\
+                    9da337b435cf4aa2a869842c8e1409004865ce6ff78d345e5c8142c9c440b677\
+                    824ce06a8f70c50bbbb01838a91eb0041fd853c2005109d3aec272dd03346f37\
+                    fc90828490fbedc4fc88e7307662b785653aba1a28a45bca913b7dd778e8bd14\
+                    1652e6f0507c3f836c8852b8ddbf2c62659dbd7b83f096e7b351f2f0dc6046bc\
+                    e3c8d0c5bb892a7a3d76d6bac899b3d356b099f88287ac25e6879d5808f83292\
+                    7c8e28acae41ab3699b5c0f9da4f58bf67d7e87c5ddb6dadd80fe281e158cc7a\
+                    24bc398f84022dc0dc3a123971f7546c",
+        );
+
+        let signature = blind_sign_with_nym(
+            &secret_key,
+            &public_key_bytes,
+            &entropy,
+            Some(&commitment_with_proof),
+            Some(&header),
+            Some(&messages),
+            &cipher,
+        );
+
+        assert_eq!(
+            bytes_to_hex(&signature.serialize()),
+            "\
+                a671299573ec1e179a92e97ebc5927698327c11e2c56608e674fff2aaf2e1a4a\
+                d9ddffcb412391c447cdf09c30e8e95d1888e3f8cc0f58a170b1a4c45e21d1d4\
+                1a387bcfff7275ae96b00d6f805bb32e"
+        );
+
+        let verification_res = blind_verify_with_nym(
+            &public_key_bytes,
+            &signature,
+            Some(&header),
+            Some(&messages),
+            Some(&committed_messages),
             Some(&prover_nym),
             Some(&entropy),
             Some(&prover_blindness),
@@ -2751,7 +3111,7 @@ mod tests {
     }
 
     #[test]
-    fn sha_256_pseudonym_commit_pid_message_with_proof() {
+    fn sha_256_pseudonym_commit_no_committed_messages_with_proof() {
         let cipher = BLS12_381_G1_XMD_SHA_256;
         let api_id = [cipher.id, PADDING_API_ID, PADDING_PSEUDONYM].concat();
         let committed_messages: Vec<&[u8]> = vec![];
@@ -2792,7 +3152,67 @@ mod tests {
     }
 
     #[test]
-    fn sha_256_pseudonym_hidden_pid_valid_all_message_signature() {
+    fn sha_256_pseudonym_commit_multiple_committed_messages_with_proof() {
+        let cipher = BLS12_381_G1_XMD_SHA_256;
+        let api_id = [cipher.id, PADDING_API_ID, PADDING_PSEUDONYM].concat();
+
+        let committed_msg_1 =
+            hex_to_bytes("5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3");
+        let committed_msg_2 = hex_to_bytes("a75d8b634891af92282cc81a675972d1929d3149863c1fc0");
+        let committed_msg_3 = hex_to_bytes("835889a40744813a892eff9deb1edaeb");
+        let committed_msg_4 = hex_to_bytes("e1ca9729410dc6ba");
+        let committed_msg_5 = hex_to_bytes("");
+
+        let committed_messages = vec![
+            committed_msg_1.as_slice(),
+            committed_msg_2.as_slice(),
+            committed_msg_3.as_slice(),
+            committed_msg_4.as_slice(),
+            committed_msg_5.as_slice(),
+        ];
+
+        let prover_nym_bytes =
+            hex_to_bytes("6830ea571e9fca0194d9ebd5c571369d8b81655afe0bbb9c6f5efe934f699418");
+        let prover_nym = Scalar::deserialize(&prover_nym_bytes);
+
+        let (commitment_with_proof, prover_blind) = blind_messages_with_nym(
+            Some(&committed_messages),
+            Some(&prover_nym),
+            Some(&api_id),
+            &cipher,
+            Some(|count: usize| -> Vec<Scalar> {
+                seeded_random_scalars(
+                    b"3.141592653589793238462643383279",
+                    b"BBS_BLS12381G1_XMD:SHA-256_SSWU_RO_H2G_HM2S_COMMIT_MOCK_RANDOM_SCALARS_DST_",
+                    count,
+                    &BLS12_381_G1_XMD_SHA_256,
+                )
+            }),
+        );
+
+        assert_eq!(
+            prover_blind.to_string(),
+            "0x15494ae70742a6a4f420106c79ee405c138557385f3f6f7256449d147ebf22b8"
+        );
+
+        assert_eq!(
+            bytes_to_hex(&commitment_with_proof.serialize()),
+            "\
+                99efccc0ccd91efabb8821ee33edacb823b1dd999682aaa54f38a9c4585e7e7a\
+                a746357b2842d38c008f6d732dd501c70eed41caf3eafdd4bb6151ce2c028940\
+                1c7d13381e7db90137d7aa2a64224aa2499a4548b2654481a2f0dd16d799116f\
+                e41db7b7a5c3ae8b1c64bef6a89a46f5040a5178d2e1126f7f35189f0f6cea38\
+                03e679ce92eff73856b164425ac4ff8405a934f65ada8ccbe21558ab66db1136\
+                62ea17ce0c9aa0280db20dcf79301c61269ddfdbdcc22025b85f7089c4ebebc2\
+                24a938b745daae833ac4698d9d32bfa8382b4bbb2679ae232d2f6e8e19239e6e\
+                a919665ea736b45a61bbd0e4f4d7431f3038c3db25833b9a0cc1a7709419ac24\
+                1fb6f02ee13e51101743f1983d3fa69b5d344b984c48a265ee6a7b0df8450004\
+                ceec7c1997b859be16af624e3da2cf44"
+        );
+    }
+
+    #[test]
+    fn sha_256_pseudonym_signature_no_prover_committed_messages_no_signer_messages() {
         let cipher = BLS12_381_G1_XMD_SHA_256;
 
         let prover_nym_bytes =
@@ -2802,6 +3222,175 @@ mod tests {
         let prover_blindness_bytes =
             "3ba0a2583bc7229fa9f2ae3a6697091032947c3a48f302b7fd2b08ca9d193041";
         let prover_blindness = Scalar::deserialize(&hex_to_bytes(prover_blindness_bytes));
+
+        let signer_nym_entropy_bytes =
+            "3d40961fce6c09eec24a371322732932503b458d7a4cf7891bdaa765b30027c5";
+        let entropy = Scalar::deserialize(&hex_to_bytes(signer_nym_entropy_bytes));
+
+        let messages = &vec![];
+        // let committed_messages = &vec![];
+
+        let header = hex_to_bytes("11223344556677889900aabbccddeeff");
+        let secret_key_bytes =
+            hex_to_bytes("60e55110f76883a13d030b2f6bd11883422d5abde717569fc0731f51237169fc");
+        let secret_key = Scalar::deserialize(&secret_key_bytes);
+
+        let public_key_bytes = hex_to_bytes(
+            "\
+                    a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28\
+                    51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f\
+                    1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c",
+        );
+
+        let commitment_with_proof = hex_to_bytes(
+            "\
+                b989fc492e2047f602504eb3e236c0acb04224c77ad0d4cbd31c887b9eb05a1f\
+                27d7acfb266fe0ae062914bfa060984c5c2ac3247080eb71fefc7e9622ffae37\
+                2425a699a298ba991a0bc5c6a3d9211347d0ce98d5c0550667269df1fb81f8fa\
+                30c07d4917c7c0786411ee5c05b00b9d501d3f8e244b860b7b11140cddc9787a\
+                3ab54ec7fd0a8950dae339f396f2641b",
+        );
+
+        let signature = blind_sign_with_nym(
+            &secret_key,
+            &public_key_bytes,
+            &entropy,
+            Some(&commitment_with_proof),
+            Some(&header),
+            Some(&messages),
+            &cipher,
+        );
+
+        assert_eq!(
+            bytes_to_hex(&signature.serialize()),
+            "\
+                8e0595c93044ff2da97c466418ea0eb8648f1ed5cb040f90decb338810c5db16\
+                8a464eacba02eb9dec7659920e59409a1faff9a30512ac66886db438787b4631\
+                25e08e5aeaf4f4467a066dbd1520a984"
+        );
+
+        let verification_res = blind_verify_with_nym(
+            &public_key_bytes,
+            &signature,
+            Some(&header),
+            Some(&messages),
+            None,
+            Some(&prover_nym),
+            Some(&entropy),
+            Some(&prover_blindness),
+            &cipher,
+        );
+
+        assert!(verification_res.is_some());
+    }
+
+    #[test]
+    fn sha_256_pseudonym_signature_multiple_prover_committed_messages_no_signer_messages() {
+        let cipher = BLS12_381_G1_XMD_SHA_256;
+
+        let prover_nym_bytes =
+            hex_to_bytes("6830ea571e9fca0194d9ebd5c571369d8b81655afe0bbb9c6f5efe934f699418");
+        let prover_nym = Scalar::deserialize(&prover_nym_bytes);
+
+        let prover_blindness_bytes =
+            "15494ae70742a6a4f420106c79ee405c138557385f3f6f7256449d147ebf22b8";
+        let prover_blindness = Scalar::deserialize(&hex_to_bytes(prover_blindness_bytes));
+
+        let signer_nym_entropy_bytes =
+            "3d40961fce6c09eec24a371322732932503b458d7a4cf7891bdaa765b30027c5";
+        let entropy = Scalar::deserialize(&hex_to_bytes(signer_nym_entropy_bytes));
+
+        let messages = &vec![];
+
+        let committed_msg_1 =
+            hex_to_bytes("5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3");
+        let committed_msg_2 = hex_to_bytes("a75d8b634891af92282cc81a675972d1929d3149863c1fc0");
+        let committed_msg_3 = hex_to_bytes("835889a40744813a892eff9deb1edaeb");
+        let committed_msg_4 = hex_to_bytes("e1ca9729410dc6ba");
+        let committed_msg_5 = hex_to_bytes("");
+
+        let committed_messages = vec![
+            committed_msg_1.as_slice(),
+            committed_msg_2.as_slice(),
+            committed_msg_3.as_slice(),
+            committed_msg_4.as_slice(),
+            committed_msg_5.as_slice(),
+        ];
+
+        let header = hex_to_bytes("11223344556677889900aabbccddeeff");
+        let secret_key_bytes =
+            hex_to_bytes("60e55110f76883a13d030b2f6bd11883422d5abde717569fc0731f51237169fc");
+        let secret_key = Scalar::deserialize(&secret_key_bytes);
+
+        let public_key_bytes = hex_to_bytes(
+            "\
+                    a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28\
+                    51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f\
+                    1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c",
+        );
+
+        let commitment_with_proof = hex_to_bytes(
+            "\
+                    99efccc0ccd91efabb8821ee33edacb823b1dd999682aaa54f38a9c4585e7e7a\
+                    a746357b2842d38c008f6d732dd501c70eed41caf3eafdd4bb6151ce2c028940\
+                    1c7d13381e7db90137d7aa2a64224aa2499a4548b2654481a2f0dd16d799116f\
+                    e41db7b7a5c3ae8b1c64bef6a89a46f5040a5178d2e1126f7f35189f0f6cea38\
+                    03e679ce92eff73856b164425ac4ff8405a934f65ada8ccbe21558ab66db1136\
+                    62ea17ce0c9aa0280db20dcf79301c61269ddfdbdcc22025b85f7089c4ebebc2\
+                    24a938b745daae833ac4698d9d32bfa8382b4bbb2679ae232d2f6e8e19239e6e\
+                    a919665ea736b45a61bbd0e4f4d7431f3038c3db25833b9a0cc1a7709419ac24\
+                    1fb6f02ee13e51101743f1983d3fa69b5d344b984c48a265ee6a7b0df8450004\
+                    ceec7c1997b859be16af624e3da2cf44",
+        );
+
+        let signature = blind_sign_with_nym(
+            &secret_key,
+            &public_key_bytes,
+            &entropy,
+            Some(&commitment_with_proof),
+            Some(&header),
+            Some(&messages),
+            &cipher,
+        );
+
+        assert_eq!(
+            bytes_to_hex(&signature.serialize()),
+            "\
+                b30fcb3c30a7eb5a864fadc88e2cdbce2b42bb9400b844a21e5d7ff0713f3cbd\
+                f1a082572247d447fb3848bc41dfc6d73840c7e56d0f869c4bee08aebc411e8b\
+                93b396734c96f26a4b7a708a403ff2c9"
+        );
+
+        let verification_res = blind_verify_with_nym(
+            &public_key_bytes,
+            &signature,
+            Some(&header),
+            Some(&messages),
+            Some(&committed_messages),
+            Some(&prover_nym),
+            Some(&entropy),
+            Some(&prover_blindness),
+            &cipher,
+        );
+
+        assert!(verification_res.is_some());
+    }
+
+    #[test]
+    fn sha_256_pseudonym_signature_no_prover_committed_messages_multiple_signer_messages() {
+        let cipher = BLS12_381_G1_XMD_SHA_256;
+
+        let prover_nym_bytes =
+            hex_to_bytes("6830ea571e9fca0194d9ebd5c571369d8b81655afe0bbb9c6f5efe934f699418");
+        let prover_nym = Scalar::deserialize(&prover_nym_bytes);
+
+        let prover_blindness_bytes =
+            "3ba0a2583bc7229fa9f2ae3a6697091032947c3a48f302b7fd2b08ca9d193041";
+        let prover_blindness = Scalar::deserialize(&hex_to_bytes(prover_blindness_bytes));
+
+        let signer_nym_entropy_bytes =
+            "3d40961fce6c09eec24a371322732932503b458d7a4cf7891bdaa765b30027c5";
+        let entropy = Scalar::deserialize(&hex_to_bytes(signer_nym_entropy_bytes));
 
         let msg_1 =
             hex_to_bytes("9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02");
@@ -2833,7 +3422,6 @@ mod tests {
         let secret_key_bytes =
             hex_to_bytes("60e55110f76883a13d030b2f6bd11883422d5abde717569fc0731f51237169fc");
         let secret_key = Scalar::deserialize(&secret_key_bytes);
-
         let public_key_bytes = hex_to_bytes(
             "\
                     a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28\
@@ -2843,20 +3431,29 @@ mod tests {
 
         let commitment_with_proof = hex_to_bytes(
             "\
-            b989fc492e2047f602504eb3e236c0acb04224c77ad0d4cbd31c887b9eb05a1f\
-            27d7acfb266fe0ae062914bfa060984c5c2ac3247080eb71fefc7e9622ffae37\
-            2425a699a298ba991a0bc5c6a3d9211347d0ce98d5c0550667269df1fb81f8fa\
-            30c07d4917c7c0786411ee5c05b00b9d501d3f8e244b860b7b11140cddc9787a\
-            3ab54ec7fd0a8950dae339f396f2641b",
+                    b989fc492e2047f602504eb3e236c0acb04224c77ad0d4cbd31c887b9eb05a1f\
+                    27d7acfb266fe0ae062914bfa060984c5c2ac3247080eb71fefc7e9622ffae37\
+                    2425a699a298ba991a0bc5c6a3d9211347d0ce98d5c0550667269df1fb81f8fa\
+                    30c07d4917c7c0786411ee5c05b00b9d501d3f8e244b860b7b11140cddc9787a\
+                    3ab54ec7fd0a8950dae339f396f2641b",
         );
 
-        let (signature, entropy) = blind_sign_with_nym(
+        let signature = blind_sign_with_nym(
             &secret_key,
             &public_key_bytes,
+            &entropy,
             Some(&commitment_with_proof),
             Some(&header),
             Some(&messages),
             &cipher,
+        );
+
+        assert_eq!(
+            bytes_to_hex(&signature.serialize()),
+            "\
+                a8c362043de23de5331483e510aafca643d7d1ace1b50003f4cc0eb250868531\
+                d401e0d3af8a35dc596ef209f41b4f6f28f5c63f8a096e2a3072633fa624872c\
+                3f6f41fb5121b354ad7d0c0ea07e0f2f"
         );
 
         let verification_res = blind_verify_with_nym(
@@ -2865,6 +3462,121 @@ mod tests {
             Some(&header),
             Some(&messages),
             None,
+            Some(&prover_nym),
+            Some(&entropy),
+            Some(&prover_blindness),
+            &cipher,
+        );
+
+        assert!(verification_res.is_some());
+    }
+
+    #[test]
+    fn sha_256_pseudonym_signature_multiple_prover_committed_messages_multiple_signer_messages() {
+        let cipher = BLS12_381_G1_XMD_SHA_256;
+
+        let prover_nym_bytes =
+            hex_to_bytes("6830ea571e9fca0194d9ebd5c571369d8b81655afe0bbb9c6f5efe934f699418");
+        let prover_nym = Scalar::deserialize(&prover_nym_bytes);
+
+        let prover_blindness_bytes =
+            "15494ae70742a6a4f420106c79ee405c138557385f3f6f7256449d147ebf22b8";
+        let prover_blindness = Scalar::deserialize(&hex_to_bytes(prover_blindness_bytes));
+
+        let signer_nym_entropy_bytes =
+            "3d40961fce6c09eec24a371322732932503b458d7a4cf7891bdaa765b30027c5";
+        let entropy = Scalar::deserialize(&hex_to_bytes(signer_nym_entropy_bytes));
+
+        let msg_1 =
+            hex_to_bytes("9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02");
+        let msg_2 =
+            hex_to_bytes("c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80");
+        let msg_3 = hex_to_bytes("7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73");
+        let msg_4 = hex_to_bytes("77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c");
+        let msg_5 = hex_to_bytes("496694774c5604ab1b2544eababcf0f53278ff50");
+        let msg_6 = hex_to_bytes("515ae153e22aae04ad16f759e07237b4");
+        let msg_7 = hex_to_bytes("d183ddc6e2665aa4e2f088af");
+        let msg_8 = hex_to_bytes("ac55fb33a75909ed");
+        let msg_9 = hex_to_bytes("96012096");
+        let msg_10 = hex_to_bytes("");
+
+        let messages = &vec![
+            msg_1.as_slice(),
+            msg_2.as_slice(),
+            msg_3.as_slice(),
+            msg_4.as_slice(),
+            msg_5.as_slice(),
+            msg_6.as_slice(),
+            msg_7.as_slice(),
+            msg_8.as_slice(),
+            msg_9.as_slice(),
+            msg_10.as_slice(),
+        ];
+
+        let committed_msg_1 =
+            hex_to_bytes("5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3");
+        let committed_msg_2 = hex_to_bytes("a75d8b634891af92282cc81a675972d1929d3149863c1fc0");
+        let committed_msg_3 = hex_to_bytes("835889a40744813a892eff9deb1edaeb");
+        let committed_msg_4 = hex_to_bytes("e1ca9729410dc6ba");
+        let committed_msg_5 = hex_to_bytes("");
+
+        let committed_messages = vec![
+            committed_msg_1.as_slice(),
+            committed_msg_2.as_slice(),
+            committed_msg_3.as_slice(),
+            committed_msg_4.as_slice(),
+            committed_msg_5.as_slice(),
+        ];
+
+        let header = hex_to_bytes("11223344556677889900aabbccddeeff");
+        let secret_key_bytes =
+            hex_to_bytes("60e55110f76883a13d030b2f6bd11883422d5abde717569fc0731f51237169fc");
+        let secret_key = Scalar::deserialize(&secret_key_bytes);
+        let public_key_bytes = hex_to_bytes(
+            "\
+                    a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28\
+                    51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f\
+                    1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c",
+        );
+
+        let commitment_with_proof = hex_to_bytes(
+            "\
+                    99efccc0ccd91efabb8821ee33edacb823b1dd999682aaa54f38a9c4585e7e7a\
+                    a746357b2842d38c008f6d732dd501c70eed41caf3eafdd4bb6151ce2c028940\
+                    1c7d13381e7db90137d7aa2a64224aa2499a4548b2654481a2f0dd16d799116f\
+                    e41db7b7a5c3ae8b1c64bef6a89a46f5040a5178d2e1126f7f35189f0f6cea38\
+                    03e679ce92eff73856b164425ac4ff8405a934f65ada8ccbe21558ab66db1136\
+                    62ea17ce0c9aa0280db20dcf79301c61269ddfdbdcc22025b85f7089c4ebebc2\
+                    24a938b745daae833ac4698d9d32bfa8382b4bbb2679ae232d2f6e8e19239e6e\
+                    a919665ea736b45a61bbd0e4f4d7431f3038c3db25833b9a0cc1a7709419ac24\
+                    1fb6f02ee13e51101743f1983d3fa69b5d344b984c48a265ee6a7b0df8450004\
+                    ceec7c1997b859be16af624e3da2cf44",
+        );
+
+        let signature = blind_sign_with_nym(
+            &secret_key,
+            &public_key_bytes,
+            &entropy,
+            Some(&commitment_with_proof),
+            Some(&header),
+            Some(&messages),
+            &cipher,
+        );
+
+        assert_eq!(
+            bytes_to_hex(&signature.serialize()),
+            "\
+                99f409633ab1140121a94508a25d3ef7fe9d7da3559408502e81331f80cbddb6\
+                21a99c02b6bab14c44aaf35b19006a1d0a91f0ac5a47b9c0a99a290c3f36debe\
+                34c00ca333a9006e769b4930e39210c8"
+        );
+
+        let verification_res = blind_verify_with_nym(
+            &public_key_bytes,
+            &signature,
+            Some(&header),
+            Some(&messages),
+            Some(&committed_messages),
             Some(&prover_nym),
             Some(&entropy),
             Some(&prover_blindness),

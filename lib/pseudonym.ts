@@ -3,7 +3,7 @@
  * with pseudonym.
  * @module pseudo
  *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-00
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-01
  */
 
 import {
@@ -28,7 +28,7 @@ import * as CONSTANT from "./constants.ts"
  *
  * @returns {object} A serialized commitment and its proof-of-correctness, along with a secret prover blindness.
  *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-00#name-commitment
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-01#name-commitment
  */
 export function commit(
   committedMessages?: Array<string>,
@@ -55,30 +55,26 @@ export function commit(
  *
  * @param {string} secretKey A string representing the secret key.
  * @param {string} publicKey A string representing the public key.
+ * @param {string} signerNymEntropy A string representing the signer's part of the pseudonym secret.
  * @param {string} [commitmentWithProof] A octet string, representing a serialized commitment and proof.
  * @param {string} [header] A string containing context and application specific information.
  * @param {Array<string>} [messages] A vector of hex-encoded strings representing the messages.
  * @param {Cipher} [cipher] The cipher suite. If not specified, it defaults to `BLS12_381_G1_XOF_SHAKE_256`.
  *
- * @returns {object} A serialized signature and the signer pseudonym entropy.
+ * @returns {object} A serialized signature.
  *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-00#name-blind-issuance
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-01#name-blind-issuance
  */
 export function sign(
   secretKey: string,
   publicKey: string,
+  signerNymEntropy: string,
   commitmentWithProof?: string,
   header?: string,
   messages?: Array<string>,
   cipher: CONSTANT.Cipher = CONSTANT.Cipher.XOF_SHAKE_256,
-): {
-  signature: string
-  entropy: string
-} {
-  const res = blind_sign_with_nym(secretKey, publicKey, commitmentWithProof, header, messages, cipher)
-  const signature = res.slice(0, -CONSTANT.LENGTH_SCALAR)
-  const entropy = res.slice(-CONSTANT.LENGTH_SCALAR)
-  return { signature, entropy }
+): string {
+  return blind_sign_with_nym(secretKey, publicKey, signerNymEntropy, commitmentWithProof, header, messages, cipher)
 }
 
 /**
@@ -99,7 +95,7 @@ export function sign(
  *
  * @returns {string | undefined} The final pseudonym secret if the signature is valid, `undefined` otherwise.
  *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-00#name-verification-and-finalizati
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-01#name-verification-and-finalizati
  */
 export function verify(
   publicKey: string,
@@ -155,7 +151,7 @@ export function verify(
  *
  * @returns {object} A hex-encoded proof and a public pseudonym.
  *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-00#name-proof-generation-with-pseud
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-01#name-proof-generation-with-pseud
  */
 export function prove(
   publicKey: string,
@@ -218,7 +214,7 @@ export function prove(
  *
  * @returns {boolean} `true` if the proof is valid, `false` otherwise.
  *
- * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-00#name-proof-verification-with-pse
+ * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-01#name-proof-verification-with-pse
  */
 export function validate(
   publicKey: string,

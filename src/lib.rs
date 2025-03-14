@@ -1,5 +1,5 @@
 use crate::proof::{export_proof_with_pseudonym, Proof};
-use crate::signature::{export_blindness, export_signature_with_entropy, Signature};
+use crate::signature::{export_blindness, Signature};
 use crate::utils::serialize::{
     import_cipher, import_option_bytes, import_option_g1_affine, import_option_scalar,
     import_option_usize, import_option_vec_bytes, Export, Import,
@@ -451,6 +451,7 @@ pub fn blind_messages_with_nym(
 pub fn blind_sign_with_nym(
     secret_key: JsValue,
     public_key: JsValue,
+    signer_nym_entropy: JsValue,
     commitment_with_proof: JsValue,
     header: JsValue,
     messages: JsValue,
@@ -460,6 +461,7 @@ pub fn blind_sign_with_nym(
 
     let secret_key: Scalar = Scalar::import(&secret_key);
     let public_key: Vec<u8> = Vec::import(&public_key);
+    let signer_nym_entropy: Scalar = Scalar::import(&signer_nym_entropy);
     let header = import_option_bytes(&header);
     let messages = import_option_vec_bytes(&messages);
     let cipher = import_cipher(&cipher);
@@ -470,15 +472,16 @@ pub fn blind_sign_with_nym(
 
     let commitment_with_proof = import_option_bytes(&commitment_with_proof);
 
-    let (signature, entropy) = signature::interface::blind_sign_with_nym(
+    signature::interface::blind_sign_with_nym(
         &secret_key,
         &public_key,
+        &signer_nym_entropy,
         commitment_with_proof.as_deref(),
         header.as_deref(),
         messages.as_ref(),
         &cipher,
-    );
-    export_signature_with_entropy(&signature, &entropy)
+    )
+    .export()
 }
 
 #[wasm_bindgen]

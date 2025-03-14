@@ -15,7 +15,8 @@ use bls12_381::{G1Affine, G1Projective, Scalar};
 /// - `api_id`: an octet string representing the API identifier.
 /// - `cipher`: a cipher suite.
 ///
-/// Return a tuple containing the commitment with proof encoded as an octet string, and a scalar value.
+/// Return a tuple containing a commitment with proof, and a scalar value representing the secret prover blindness, in
+/// that order.
 pub(super) fn blind_commit(
     blind_generators: &Vec<G1Affine>,
     committed_messages: Option<&Vec<Scalar>>,
