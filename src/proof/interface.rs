@@ -161,7 +161,7 @@ pub(crate) fn validate(
 /// generation operation defined here accepts two more lists of messages and disclosed indexes, one for the messages
 /// known to the signer (`messages`) and the corresponding disclosed indexes (`disclosed_indexes`), and one for the
 /// messages committed by the prover (`committed_messages`) and the corresponding disclosed indexes
-/// (`disclosed_commitment_indexes`).
+/// (`disclosed_committed_indexes`).
 ///
 /// Furthermore, the operation also expects the `secret_prover_blind` (as returned from the commit operation) value. If
 /// the BBS signature is generated using a commitment value, then the `secret_prover_blind` returned by the commit
@@ -175,7 +175,7 @@ pub(crate) fn validate(
 /// - `messages`: a list of octet strings representing the signed messages.
 /// - `committed_messages`: a list of octet strings representing the committed messages.
 /// - `disclosed_indexes`: a list of integers in ascending order representing the indexes of disclosed messages.
-/// - `disclosed_commitment_indexes`: a list of integers representing the indexes of disclosed commitment messages.
+/// - `disclosed_committed_indexes`: a list of integers representing the indexes of disclosed commitment messages.
 /// - `secret_prover_blind`: a scalar representing the secret prover blind value.
 /// - `cipher`: a cipher suite.
 ///
@@ -188,7 +188,7 @@ pub fn blind_prove(
     messages: Option<&Vec<&[u8]>>,
     committed_messages: Option<&Vec<&[u8]>>,
     disclosed_indexes: Option<&Vec<usize>>,
-    disclosed_commitment_indexes: Option<&Vec<usize>>,
+    disclosed_committed_indexes: Option<&Vec<usize>>,
     secret_prover_blind: Option<&Scalar>,
     cipher: &Cipher,
     random_scalar_sampler: Option<fn(usize) -> Vec<Scalar>>,
@@ -196,14 +196,14 @@ pub fn blind_prove(
     let default_messages = vec![];
     let default_committed_messages = vec![];
     let default_disclosed_indexes = vec![];
-    let default_disclosed_commitment_indexes = vec![];
+    let default_disclosed_committed_indexes = vec![];
     let default_secret_prover_blind = Scalar::zero();
 
     let messages = messages.unwrap_or(&default_messages);
     let committed_messages = committed_messages.unwrap_or(&default_committed_messages);
     let disclosed_indexes = disclosed_indexes.unwrap_or(&default_disclosed_indexes);
-    let disclosed_commitment_indexes =
-        disclosed_commitment_indexes.unwrap_or(&default_disclosed_commitment_indexes);
+    let disclosed_committed_indexes =
+        disclosed_committed_indexes.unwrap_or(&default_disclosed_committed_indexes);
     let secret_prover_blind = secret_prover_blind.unwrap_or(&default_secret_prover_blind);
 
     // Parameters:
@@ -218,8 +218,8 @@ pub fn blind_prove(
     // 2. M := len(committed_messages).
     // 3. If len(disclosed_indexes) > L, return INVALID.
     // 4. For i in disclosed_indexes, if i < 0 or i >= L, return INVALID.
-    // 5. If len(disclosed_commitment_indexes) > M, return INVALID.
-    // 6. For j in disclosed_commitment_indexes, if j < 0 or j >= M, return INVALID.
+    // 5. If len(disclosed_committed_indexes) > M, return INVALID.
+    // 6. For j in disclosed_committed_indexes, if j < 0 or j >= M, return INVALID.
 
     let l = messages.len();
     let m = committed_messages.len();
@@ -231,12 +231,12 @@ pub fn blind_prove(
             panic!("Invalid disclosed indexes");
         }
     });
-    if disclosed_commitment_indexes.len() > m {
-        panic!("Invalid disclosed commitment indexes");
+    if disclosed_committed_indexes.len() > m {
+        panic!("Invalid disclosed committed indexes");
     }
-    disclosed_commitment_indexes.iter().for_each(|&j| {
+    disclosed_committed_indexes.iter().for_each(|&j| {
         if j >= m {
-            panic!("Invalid disclosed commitment indexes");
+            panic!("Invalid disclosed committed indexes");
         }
     });
 
@@ -251,7 +251,7 @@ pub fn blind_prove(
     //          api_id).
     // 2. indexes := ().
     // 3. indexes.append(disclosed_indexes).
-    // 4. For j in disclosed_commitment_indexes: indexes.append(j + L + 1).
+    // 4. For j in disclosed_committed_indexes: indexes.append(j + L + 1).
     // 5. proof := core_prove(
     //          public_key,
     //          signature,
@@ -275,7 +275,7 @@ pub fn blind_prove(
 
     let mut indexes: Vec<usize> = Vec::new();
     indexes.extend(disclosed_indexes);
-    disclosed_commitment_indexes.iter().for_each(|&j| {
+    disclosed_committed_indexes.iter().for_each(|&j| {
         indexes.push(j + l + 1);
     });
 
@@ -306,9 +306,9 @@ pub fn blind_prove(
 /// - `presentation_header`: an octet string representing the presentation header.
 /// - `l`: an integer representing the total number of signed messages known by the signer.
 /// - `disclosed_messages`: a list of octet strings representing the disclosed messages.
-/// - `disclosed_commitment_messages`: a list of octet strings representing the disclosed commitment messages.
+/// - `disclosed_committed_messages`: a list of octet strings representing the disclosed committed messages.
 /// - `disclosed_indexes`: a list of integers representing the indexes of disclosed messages.
-/// - `disclosed_commitment_indexes`: a list of integers representing the indexes of disclosed commitment messages.
+/// - `disclosed_committed_indexes`: a list of integers representing the indexes of disclosed committed messages.
 /// - `cipher`: a cipher suite.
 ///
 /// Return `true` if the proof is valid, `false` otherwise.
@@ -319,22 +319,22 @@ pub fn blind_validate(
     presentation_header: Option<&[u8]>,
     l: Option<usize>,
     disclosed_messages: Option<&Vec<&[u8]>>,
-    disclosed_commitment_messages: Option<&Vec<&[u8]>>,
+    disclosed_committed_messages: Option<&Vec<&[u8]>>,
     disclosed_indexes: Option<&Vec<usize>>,
-    disclosed_commitment_indexes: Option<&Vec<usize>>,
+    disclosed_committed_indexes: Option<&Vec<usize>>,
     cipher: &Cipher,
 ) -> bool {
     let default_disclosed_messages = vec![];
-    let default_disclosed_commitment_messages = vec![];
+    let default_disclosed_committed_messages = vec![];
     let default_disclosed_indexes = vec![];
-    let default_disclosed_commitment_indexes = vec![];
+    let default_disclosed_committed_indexes = vec![];
 
     let disclosed_messages = disclosed_messages.unwrap_or(&default_disclosed_messages);
-    let disclosed_commitment_messages =
-        disclosed_commitment_messages.unwrap_or(&default_disclosed_commitment_messages);
+    let disclosed_committed_messages =
+        disclosed_committed_messages.unwrap_or(&default_disclosed_committed_messages);
     let disclosed_indexes = disclosed_indexes.unwrap_or(&default_disclosed_indexes);
-    let disclosed_commitment_indexes =
-        disclosed_commitment_indexes.unwrap_or(&default_disclosed_commitment_indexes);
+    let disclosed_committed_indexes =
+        disclosed_committed_indexes.unwrap_or(&default_disclosed_committed_indexes);
 
     let l = l.unwrap_or(0);
 
@@ -352,25 +352,25 @@ pub fn blind_validate(
     // 1. proof_len_floor := 2 * octet_point_length + 3 * octet_scalar_length.
     // 2. If len(proof) < proof_len_floor, return INVALID.
     // 3. U := floor((len(proof) - proof_len_floor) / octet_scalar_length).
-    // 4. total_no_messages := len(disclosed_indexes) + len(disclosed_commitment_indexes) + U.
+    // 4. total_no_messages := len(disclosed_indexes) + len(disclosed_committed_indexes) + U.
     // 5. M := total_no_messages - L.
 
     let u = proof.m_hats.len();
-    let total_no_messages = disclosed_indexes.len() + disclosed_commitment_indexes.len() + u;
+    let total_no_messages = disclosed_indexes.len() + disclosed_committed_indexes.len() + u;
     let m = total_no_messages - l;
 
     // Procedure:
     //
     // 1. (message_scalars, generators) := prepare_parameters(
     //          disclosed_messages,
-    //          disclosed_commitment_messages,
+    //          disclosed_committed_messages,
     //          L + 1,
     //          M,
     //          None,
     //          api_id).
     // 2. indexes := ().
     // 3. indexes.append(disclosed_indexes).
-    // 4. For j in disclosed_commitment_indexes: indexes.append(j + L + 1).
+    // 4. For j in disclosed_committed_indexes: indexes.append(j + L + 1).
     // 5. result := core_proof_verify(
     //          public_key,
     //          proof,
@@ -384,7 +384,7 @@ pub fn blind_validate(
 
     let (message_scalars, generators) = prepare_parameters(
         Some(&disclosed_messages),
-        Some(&disclosed_commitment_messages),
+        Some(&disclosed_committed_messages),
         l + 1,
         m,
         None,
@@ -393,7 +393,7 @@ pub fn blind_validate(
     );
     let mut indexes: Vec<usize> = Vec::new();
     indexes.extend(disclosed_indexes);
-    disclosed_commitment_indexes.iter().for_each(|&j| {
+    disclosed_committed_indexes.iter().for_each(|&j| {
         indexes.push(j + l + 1);
     });
     super::core::validate(
@@ -435,7 +435,7 @@ pub(crate) fn blind_prove_with_nym(
     messages: Option<&Vec<&[u8]>>,
     committed_messages: Option<&Vec<&[u8]>>,
     disclosed_indexes: Option<&Vec<usize>>,
-    disclosed_commitment_indexes: Option<&Vec<usize>>,
+    disclosed_committed_indexes: Option<&Vec<usize>>,
     secret_prover_blind: Option<&Scalar>,
     cipher: &Cipher,
     random_scalar_sampler: Option<fn(usize) -> Vec<Scalar>>,
@@ -445,7 +445,7 @@ pub(crate) fn blind_prove_with_nym(
     let default_messages = vec![];
     let default_committed_messages = vec![];
     let default_disclosed_indexes = vec![];
-    let default_disclosed_commitment_indexes = vec![];
+    let default_disclosed_committed_indexes = vec![];
     let default_secret_prover_blind = Scalar::zero();
 
     let nym_secret = nym_secret.unwrap_or(&default_nym_secret);
@@ -453,8 +453,8 @@ pub(crate) fn blind_prove_with_nym(
     let messages = messages.unwrap_or(&default_messages);
     let committed_messages = committed_messages.unwrap_or(&default_committed_messages);
     let disclosed_indexes = disclosed_indexes.unwrap_or(&default_disclosed_indexes);
-    let disclosed_commitment_indexes =
-        disclosed_commitment_indexes.unwrap_or(&default_disclosed_commitment_indexes);
+    let disclosed_committed_indexes =
+        disclosed_committed_indexes.unwrap_or(&default_disclosed_committed_indexes);
     let secret_prover_blind = secret_prover_blind.unwrap_or(&default_secret_prover_blind);
 
     // Parameters:
@@ -469,8 +469,8 @@ pub(crate) fn blind_prove_with_nym(
     // 2. M := len(committed_messages).
     // 3. If len(disclosed_indexes) > L, return INVALID.
     // 4. For i in disclosed_indexes, if i < 0 or i >= L, return INVALID.
-    // 5. If len(disclosed_commitment_indexes) > M, return INVALID.
-    // 6. For j in disclosed_commitment_indexes, if j < 0 or j >= M, return INVALID.
+    // 5. If len(disclosed_committed_indexes) > M, return INVALID.
+    // 6. For j in disclosed_committed_indexes, if j < 0 or j >= M, return INVALID.
 
     let l = messages.len();
     let m = committed_messages.len();
@@ -482,12 +482,12 @@ pub(crate) fn blind_prove_with_nym(
             panic!("Invalid disclosed indexes");
         }
     });
-    if disclosed_commitment_indexes.len() > m {
-        panic!("Invalid disclosed commitment indexes");
+    if disclosed_committed_indexes.len() > m {
+        panic!("Invalid disclosed committed indexes");
     }
-    disclosed_commitment_indexes.iter().for_each(|&j| {
+    disclosed_committed_indexes.iter().for_each(|&j| {
         if j >= m {
-            panic!("Invalid disclosed commitment indexes");
+            panic!("Invalid disclosed committed indexes");
         }
     });
 
@@ -503,7 +503,7 @@ pub(crate) fn blind_prove_with_nym(
     // 2. message_scalars.append(nym_secret).
     // 3. indexes := ().
     // 4. indexes.append(disclosed_indexes).
-    // 5. For j in disclosed_commitment_indexes: indexes.append(j + L + 1).
+    // 5. For j in disclosed_committed_indexes: indexes.append(j + L + 1).
     // 6. (proof, pseudonym) := core_prove_with_nym(
     //          public_key,
     //          signature,
@@ -530,7 +530,7 @@ pub(crate) fn blind_prove_with_nym(
 
     let mut indexes: Vec<usize> = Vec::new();
     indexes.extend(disclosed_indexes);
-    disclosed_commitment_indexes.iter().for_each(|&j| {
+    disclosed_committed_indexes.iter().for_each(|&j| {
         indexes.push(j + l + 1);
     });
 
@@ -561,9 +561,9 @@ pub(crate) fn blind_prove_with_nym(
 /// - `presentation_header`: an octet string representing the presentation header.
 /// - `l`: an integer representing the total number of signed messages known by the signer.
 /// - `disclosed_messages`: a list of octet strings representing the disclosed messages.
-/// - `disclosed_commitment_messages`: a list of octet strings representing the disclosed commitment messages.
+/// - `disclosed_committed_messages`: a list of octet strings representing the disclosed committed messages.
 /// - `disclosed_indexes`: a list of integers representing the indexes of disclosed messages.
-/// - `disclosed_commitment_indexes`: a list of integers representing the indexes of disclosed commitment messages.
+/// - `disclosed_committed_indexes`: a list of integers representing the indexes of disclosed committed messages.
 /// - `cipher`: a cipher suite.
 ///
 /// Return `true` if the proof is valid, `false` otherwise.
@@ -576,26 +576,26 @@ pub fn blind_validate_with_nym(
     context_id: Option<&[u8]>,
     l: Option<usize>,
     disclosed_messages: Option<&Vec<&[u8]>>,
-    disclosed_commitment_messages: Option<&Vec<&[u8]>>,
+    disclosed_committed_messages: Option<&Vec<&[u8]>>,
     disclosed_indexes: Option<&Vec<usize>>,
-    disclosed_commitment_indexes: Option<&Vec<usize>>,
+    disclosed_committed_indexes: Option<&Vec<usize>>,
     cipher: &Cipher,
 ) -> bool {
     let default_pseudonym = G1Affine::identity();
     let default_context_id = vec![];
     let default_disclosed_messages = vec![];
-    let default_disclosed_commitment_messages = vec![];
+    let default_disclosed_committed_messages = vec![];
     let default_disclosed_indexes = vec![];
-    let default_disclosed_commitment_indexes = vec![];
+    let default_disclosed_committed_indexes = vec![];
 
     let pseudonym = pseudonym.unwrap_or(&default_pseudonym);
     let context_id = context_id.unwrap_or(&default_context_id);
     let disclosed_messages = disclosed_messages.unwrap_or(&default_disclosed_messages);
-    let disclosed_commitment_messages =
-        disclosed_commitment_messages.unwrap_or(&default_disclosed_commitment_messages);
+    let disclosed_committed_messages =
+        disclosed_committed_messages.unwrap_or(&default_disclosed_committed_messages);
     let disclosed_indexes = disclosed_indexes.unwrap_or(&default_disclosed_indexes);
-    let disclosed_commitment_indexes =
-        disclosed_commitment_indexes.unwrap_or(&default_disclosed_commitment_indexes);
+    let disclosed_committed_indexes =
+        disclosed_committed_indexes.unwrap_or(&default_disclosed_committed_indexes);
 
     let l = l.unwrap_or(0);
 
@@ -610,25 +610,25 @@ pub fn blind_validate_with_nym(
     // 1. proof_len_floor := 2 * octet_point_length + 3 * octet_scalar_length.
     // 2. If len(proof) < proof_len_floor, return INVALID.
     // 3. U := floor((len(proof) - proof_len_floor) / octet_scalar_length).
-    // 4. total_no_messages := len(disclosed_indexes) + len(disclosed_commitment_indexes) + U.
+    // 4. total_no_messages := len(disclosed_indexes) + len(disclosed_committed_indexes) + U.
     // 5. M := total_no_messages - L.
 
     let u = proof.m_hats.len();
-    let total_no_messages = disclosed_indexes.len() + disclosed_commitment_indexes.len() + u;
+    let total_no_messages = disclosed_indexes.len() + disclosed_committed_indexes.len() + u;
     let m = total_no_messages - l;
 
     // Procedure:
     //
     // 1. (message_scalars, generators) := prepare_parameters(
     //          disclosed_messages,
-    //          disclosed_commitment_messages,
+    //          disclosed_committed_messages,
     //          L + 1,
     //          M,
     //          None,
     //          api_id).
     // 2. indexes := ().
     // 3. indexes.append(disclosed_indexes).
-    // 4. For j in disclosed_commitment_indexes: indexes.append(j + L + 1).
+    // 4. For j in disclosed_committed_indexes: indexes.append(j + L + 1).
     // 5. result := core_proof_verify_with_pseudonym(
     //          public_key,
     //          proof,
@@ -644,7 +644,7 @@ pub fn blind_validate_with_nym(
 
     let (message_scalars, generators) = prepare_parameters(
         Some(&disclosed_messages),
-        Some(&disclosed_commitment_messages),
+        Some(&disclosed_committed_messages),
         l + 1,
         m,
         None,
@@ -653,7 +653,7 @@ pub fn blind_validate_with_nym(
     );
     let mut indexes: Vec<usize> = Vec::new();
     indexes.extend(disclosed_indexes);
-    disclosed_commitment_indexes.iter().for_each(|&j| {
+    disclosed_committed_indexes.iter().for_each(|&j| {
         indexes.push(j + l + 1);
     });
 
@@ -1538,7 +1538,7 @@ mod tests {
         ];
 
         let disclosed_indexes = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-        let disclosed_commitment_indexes = vec![0, 1, 2, 3, 4];
+        let disclosed_committed_indexes = vec![0, 1, 2, 3, 4];
 
         let signature_bytes = hex_to_bytes(
             "\
@@ -1558,7 +1558,7 @@ mod tests {
             Some(&messages),
             Some(&committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             Some(&prover_blind),
             &cipher,
             Some(|count: usize| -> Vec<Scalar> {
@@ -1595,7 +1595,7 @@ mod tests {
         let disclosed_committed_messages = committed_messages
             .iter()
             .enumerate()
-            .filter(|(i, _)| disclosed_commitment_indexes.contains(i))
+            .filter(|(i, _)| disclosed_committed_indexes.contains(i))
             .map(|(_, m)| *m)
             .collect::<Vec<_>>();
 
@@ -1608,7 +1608,7 @@ mod tests {
             Some(&disclosed_messages),
             Some(&disclosed_committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             &cipher,
         );
 
@@ -1672,7 +1672,7 @@ mod tests {
         ];
 
         let disclosed_indexes = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-        let disclosed_commitment_indexes = vec![0, 2, 4];
+        let disclosed_committed_indexes = vec![0, 2, 4];
 
         let signature_bytes = hex_to_bytes(
             "\
@@ -1692,7 +1692,7 @@ mod tests {
             Some(&messages),
             Some(&committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             Some(&prover_blind),
             &cipher,
             Some(|count: usize| -> Vec<Scalar> {
@@ -1731,7 +1731,7 @@ mod tests {
         let disclosed_committed_messages = committed_messages
             .iter()
             .enumerate()
-            .filter(|(i, _)| disclosed_commitment_indexes.contains(i))
+            .filter(|(i, _)| disclosed_committed_indexes.contains(i))
             .map(|(_, m)| *m)
             .collect::<Vec<_>>();
 
@@ -1744,7 +1744,7 @@ mod tests {
             Some(&disclosed_messages),
             Some(&disclosed_committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             &cipher,
         );
 
@@ -1808,7 +1808,7 @@ mod tests {
         ];
 
         let disclosed_indexes = vec![0, 2, 4, 6, 8];
-        let disclosed_commitment_indexes = vec![0, 1, 2, 3, 4];
+        let disclosed_committed_indexes = vec![0, 1, 2, 3, 4];
 
         let signature_bytes = hex_to_bytes(
             "\
@@ -1828,7 +1828,7 @@ mod tests {
             Some(&messages),
             Some(&committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             Some(&prover_blind),
             &cipher,
             Some(|count: usize| -> Vec<Scalar> {
@@ -1870,7 +1870,7 @@ mod tests {
         let disclosed_committed_messages = committed_messages
             .iter()
             .enumerate()
-            .filter(|(i, _)| disclosed_commitment_indexes.contains(i))
+            .filter(|(i, _)| disclosed_committed_indexes.contains(i))
             .map(|(_, m)| *m)
             .collect::<Vec<_>>();
 
@@ -1883,7 +1883,7 @@ mod tests {
             Some(&disclosed_messages),
             Some(&disclosed_committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             &cipher,
         );
 
@@ -1947,7 +1947,7 @@ mod tests {
         ];
 
         let disclosed_indexes = vec![0, 2, 4, 6, 8];
-        let disclosed_commitment_indexes = vec![0, 2, 4];
+        let disclosed_committed_indexes = vec![0, 2, 4];
 
         let signature_bytes = hex_to_bytes(
             "\
@@ -1967,7 +1967,7 @@ mod tests {
             Some(&messages),
             Some(&committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             Some(&prover_blind),
             &cipher,
             Some(|count: usize| -> Vec<Scalar> {
@@ -2011,7 +2011,7 @@ mod tests {
         let disclosed_committed_messages = committed_messages
             .iter()
             .enumerate()
-            .filter(|(i, _)| disclosed_commitment_indexes.contains(i))
+            .filter(|(i, _)| disclosed_committed_indexes.contains(i))
             .map(|(_, m)| *m)
             .collect::<Vec<_>>();
 
@@ -2024,7 +2024,7 @@ mod tests {
             Some(&disclosed_messages),
             Some(&disclosed_committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             &cipher,
         );
 
@@ -2088,7 +2088,7 @@ mod tests {
         ];
 
         let disclosed_indexes = vec![0, 2, 4, 6, 8];
-        let disclosed_commitment_indexes = vec![];
+        let disclosed_committed_indexes = vec![];
 
         let signature_bytes = hex_to_bytes(
             "\
@@ -2108,7 +2108,7 @@ mod tests {
             Some(&messages),
             Some(&committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             Some(&prover_blind),
             &cipher,
             Some(|count: usize| -> Vec<Scalar> {
@@ -2155,7 +2155,7 @@ mod tests {
         let disclosed_committed_messages = committed_messages
             .iter()
             .enumerate()
-            .filter(|(i, _)| disclosed_commitment_indexes.contains(i))
+            .filter(|(i, _)| disclosed_committed_indexes.contains(i))
             .map(|(_, m)| *m)
             .collect::<Vec<_>>();
 
@@ -2168,7 +2168,7 @@ mod tests {
             Some(&disclosed_messages),
             Some(&disclosed_committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             &cipher,
         );
 
@@ -2232,7 +2232,7 @@ mod tests {
         ];
 
         let disclosed_indexes = vec![];
-        let disclosed_commitment_indexes = vec![0, 2, 4];
+        let disclosed_committed_indexes = vec![0, 2, 4];
 
         let signature_bytes = hex_to_bytes(
             "\
@@ -2252,7 +2252,7 @@ mod tests {
             Some(&messages),
             Some(&committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             Some(&prover_blind),
             &cipher,
             Some(|count: usize| -> Vec<Scalar> {
@@ -2301,7 +2301,7 @@ mod tests {
         let disclosed_committed_messages = committed_messages
             .iter()
             .enumerate()
-            .filter(|(i, _)| disclosed_commitment_indexes.contains(i))
+            .filter(|(i, _)| disclosed_committed_indexes.contains(i))
             .map(|(_, m)| *m)
             .collect::<Vec<_>>();
 
@@ -2314,7 +2314,7 @@ mod tests {
             Some(&disclosed_messages),
             Some(&disclosed_committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             &cipher,
         );
 
@@ -2378,7 +2378,7 @@ mod tests {
         ];
 
         let disclosed_indexes = vec![];
-        let disclosed_commitment_indexes = vec![];
+        let disclosed_committed_indexes = vec![];
 
         let signature_bytes = hex_to_bytes(
             "\
@@ -2398,7 +2398,7 @@ mod tests {
             Some(&messages),
             Some(&committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             Some(&prover_blind),
             &cipher,
             Some(|count: usize| -> Vec<Scalar> {
@@ -2450,7 +2450,7 @@ mod tests {
         let disclosed_committed_messages = committed_messages
             .iter()
             .enumerate()
-            .filter(|(i, _)| disclosed_commitment_indexes.contains(i))
+            .filter(|(i, _)| disclosed_committed_indexes.contains(i))
             .map(|(_, m)| *m)
             .collect::<Vec<_>>();
 
@@ -2463,7 +2463,7 @@ mod tests {
             Some(&disclosed_messages),
             Some(&disclosed_committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             &cipher,
         );
 
@@ -4536,7 +4536,7 @@ mod tests {
         ];
 
         let disclosed_indexes = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-        let disclosed_commitment_indexes = vec![0, 1, 2, 3, 4];
+        let disclosed_committed_indexes = vec![0, 1, 2, 3, 4];
 
         let signature_bytes = hex_to_bytes(
             "\
@@ -4556,7 +4556,7 @@ mod tests {
             Some(&messages),
             Some(&committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             Some(&prover_blind),
             &cipher,
             Some(|count: usize| -> Vec<Scalar> {
@@ -4593,7 +4593,7 @@ mod tests {
         let disclosed_committed_messages = committed_messages
             .iter()
             .enumerate()
-            .filter(|(i, _)| disclosed_commitment_indexes.contains(i))
+            .filter(|(i, _)| disclosed_committed_indexes.contains(i))
             .map(|(_, m)| *m)
             .collect::<Vec<_>>();
 
@@ -4606,7 +4606,7 @@ mod tests {
             Some(&disclosed_messages),
             Some(&disclosed_committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             &cipher,
         );
 
@@ -4670,7 +4670,7 @@ mod tests {
         ];
 
         let disclosed_indexes = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-        let disclosed_commitment_indexes = vec![0, 2, 4];
+        let disclosed_committed_indexes = vec![0, 2, 4];
 
         let signature_bytes = hex_to_bytes(
             "\
@@ -4690,7 +4690,7 @@ mod tests {
             Some(&messages),
             Some(&committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             Some(&prover_blind),
             &cipher,
             Some(|count: usize| -> Vec<Scalar> {
@@ -4729,7 +4729,7 @@ mod tests {
         let disclosed_committed_messages = committed_messages
             .iter()
             .enumerate()
-            .filter(|(i, _)| disclosed_commitment_indexes.contains(i))
+            .filter(|(i, _)| disclosed_committed_indexes.contains(i))
             .map(|(_, m)| *m)
             .collect::<Vec<_>>();
 
@@ -4742,7 +4742,7 @@ mod tests {
             Some(&disclosed_messages),
             Some(&disclosed_committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             &cipher,
         );
 
@@ -4806,7 +4806,7 @@ mod tests {
         ];
 
         let disclosed_indexes = vec![0, 2, 4, 6, 8];
-        let disclosed_commitment_indexes = vec![0, 1, 2, 3, 4];
+        let disclosed_committed_indexes = vec![0, 1, 2, 3, 4];
 
         let signature_bytes = hex_to_bytes(
             "\
@@ -4826,7 +4826,7 @@ mod tests {
             Some(&messages),
             Some(&committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             Some(&prover_blind),
             &cipher,
             Some(|count: usize| -> Vec<Scalar> {
@@ -4868,7 +4868,7 @@ mod tests {
         let disclosed_committed_messages = committed_messages
             .iter()
             .enumerate()
-            .filter(|(i, _)| disclosed_commitment_indexes.contains(i))
+            .filter(|(i, _)| disclosed_committed_indexes.contains(i))
             .map(|(_, m)| *m)
             .collect::<Vec<_>>();
 
@@ -4881,7 +4881,7 @@ mod tests {
             Some(&disclosed_messages),
             Some(&disclosed_committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             &cipher,
         );
 
@@ -4945,7 +4945,7 @@ mod tests {
         ];
 
         let disclosed_indexes = vec![0, 2, 4, 6, 8];
-        let disclosed_commitment_indexes = vec![0, 2, 4];
+        let disclosed_committed_indexes = vec![0, 2, 4];
 
         let signature_bytes = hex_to_bytes(
             "\
@@ -4965,7 +4965,7 @@ mod tests {
             Some(&messages),
             Some(&committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             Some(&prover_blind),
             &cipher,
             Some(|count: usize| -> Vec<Scalar> {
@@ -5009,7 +5009,7 @@ mod tests {
         let disclosed_committed_messages = committed_messages
             .iter()
             .enumerate()
-            .filter(|(i, _)| disclosed_commitment_indexes.contains(i))
+            .filter(|(i, _)| disclosed_committed_indexes.contains(i))
             .map(|(_, m)| *m)
             .collect::<Vec<_>>();
 
@@ -5022,7 +5022,7 @@ mod tests {
             Some(&disclosed_messages),
             Some(&disclosed_committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             &cipher,
         );
 
@@ -5086,7 +5086,7 @@ mod tests {
         ];
 
         let disclosed_indexes = vec![0, 2, 4, 6, 8];
-        let disclosed_commitment_indexes = vec![];
+        let disclosed_committed_indexes = vec![];
 
         let signature_bytes = hex_to_bytes(
             "\
@@ -5106,7 +5106,7 @@ mod tests {
             Some(&messages),
             Some(&committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             Some(&prover_blind),
             &cipher,
             Some(|count: usize| -> Vec<Scalar> {
@@ -5153,7 +5153,7 @@ mod tests {
         let disclosed_committed_messages = committed_messages
             .iter()
             .enumerate()
-            .filter(|(i, _)| disclosed_commitment_indexes.contains(i))
+            .filter(|(i, _)| disclosed_committed_indexes.contains(i))
             .map(|(_, m)| *m)
             .collect::<Vec<_>>();
 
@@ -5166,7 +5166,7 @@ mod tests {
             Some(&disclosed_messages),
             Some(&disclosed_committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             &cipher,
         );
 
@@ -5230,7 +5230,7 @@ mod tests {
         ];
 
         let disclosed_indexes = vec![];
-        let disclosed_commitment_indexes = vec![0, 2, 4];
+        let disclosed_committed_indexes = vec![0, 2, 4];
 
         let signature_bytes = hex_to_bytes(
             "\
@@ -5250,7 +5250,7 @@ mod tests {
             Some(&messages),
             Some(&committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             Some(&prover_blind),
             &cipher,
             Some(|count: usize| -> Vec<Scalar> {
@@ -5299,7 +5299,7 @@ mod tests {
         let disclosed_committed_messages = committed_messages
             .iter()
             .enumerate()
-            .filter(|(i, _)| disclosed_commitment_indexes.contains(i))
+            .filter(|(i, _)| disclosed_committed_indexes.contains(i))
             .map(|(_, m)| *m)
             .collect::<Vec<_>>();
 
@@ -5312,7 +5312,7 @@ mod tests {
             Some(&disclosed_messages),
             Some(&disclosed_committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             &cipher,
         );
 
@@ -5376,7 +5376,7 @@ mod tests {
         ];
 
         let disclosed_indexes = vec![];
-        let disclosed_commitment_indexes = vec![];
+        let disclosed_committed_indexes = vec![];
 
         let signature_bytes = hex_to_bytes(
             "\
@@ -5396,7 +5396,7 @@ mod tests {
             Some(&messages),
             Some(&committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             Some(&prover_blind),
             &cipher,
             Some(|count: usize| -> Vec<Scalar> {
@@ -5448,7 +5448,7 @@ mod tests {
         let disclosed_committed_messages = committed_messages
             .iter()
             .enumerate()
-            .filter(|(i, _)| disclosed_commitment_indexes.contains(i))
+            .filter(|(i, _)| disclosed_committed_indexes.contains(i))
             .map(|(_, m)| *m)
             .collect::<Vec<_>>();
 
@@ -5461,7 +5461,7 @@ mod tests {
             Some(&disclosed_messages),
             Some(&disclosed_committed_messages),
             Some(&disclosed_indexes),
-            Some(&disclosed_commitment_indexes),
+            Some(&disclosed_committed_indexes),
             &cipher,
         );
 

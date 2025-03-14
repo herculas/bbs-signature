@@ -195,6 +195,657 @@ Deno.test("Shake-256 signature, multiple prover committed messages, multiple sig
   assert(result)
 })
 
+Deno.test("Shake-256 proof, all committed messages, all signer messages", () => {
+  const cipher = CONSTANT.Cipher.XOF_SHAKE_256
+
+  const header = "11223344556677889900aabbccddeeff"
+  const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
+
+  const publicKey = "a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28" +
+    "51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f" +
+    "1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c"
+
+  const message0 = "9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02"
+  const message1 = "c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80"
+  const message2 = "7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73"
+  const message3 = "77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c"
+  const message4 = "496694774c5604ab1b2544eababcf0f53278ff50"
+  const message5 = "515ae153e22aae04ad16f759e07237b4"
+  const message6 = "d183ddc6e2665aa4e2f088af"
+  const message7 = "ac55fb33a75909ed"
+  const message8 = "96012096"
+  const message9 = ""
+
+  const committedMessage0 = "5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3"
+  const committedMessage1 = "a75d8b634891af92282cc81a675972d1929d3149863c1fc0"
+  const committedMessage2 = "835889a40744813a892eff9deb1edaeb"
+  const committedMessage3 = "e1ca9729410dc6ba"
+  const committedMessage4 = ""
+
+  const messages = [
+    message0,
+    message1,
+    message2,
+    message3,
+    message4,
+    message5,
+    message6,
+    message7,
+    message8,
+    message9,
+  ]
+
+  const committedMessages = [
+    committedMessage0,
+    committedMessage1,
+    committedMessage2,
+    committedMessage3,
+    committedMessage4,
+  ]
+
+  const disclosedIndexes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  const disclosedCommittedIndexes = [0, 1, 2, 3, 4]
+
+  const disclosedMessages = disclosedIndexes.map((i) => messages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
+
+  const signature = "a671299573ec1e179a92e97ebc5927698327c11e2c56608e674fff2aaf2e1a4a" +
+    "d9ddffcb412391c447cdf09c30e8e95d1888e3f8cc0f58a170b1a4c45e21d1d4" +
+    "1a387bcfff7275ae96b00d6f805bb32e"
+
+  const nymSecret = "3183d923c36e56a823ea4ae0de4287ca87ff06e5785a57268b39a5fa0269bbdc"
+  const proverBlindness = "1ade8b27cccac993dfe3d57be0cd1a200a5cae52d9ea525f106c94f06fea89c3"
+  const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
+
+  const { proof, pseudonym } = pseudo.prove(
+    publicKey,
+    signature,
+    header,
+    presentationHeader,
+    nymSecret,
+    contextId,
+    messages,
+    committedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    proverBlindness,
+    cipher,
+  )
+  const result = pseudo.validate(
+    publicKey,
+    proof,
+    header,
+    presentationHeader,
+    pseudonym,
+    contextId,
+    10,
+    disclosedMessages,
+    disclosedCommittedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    cipher,
+  )
+  assert(result)
+})
+
+Deno.test("Shake-256 proof, half committed messages, all signer messages", () => {
+  const cipher = CONSTANT.Cipher.XOF_SHAKE_256
+
+  const header = "11223344556677889900aabbccddeeff"
+  const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
+
+  const publicKey = "a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28" +
+    "51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f" +
+    "1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c"
+
+  const message0 = "9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02"
+  const message1 = "c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80"
+  const message2 = "7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73"
+  const message3 = "77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c"
+  const message4 = "496694774c5604ab1b2544eababcf0f53278ff50"
+  const message5 = "515ae153e22aae04ad16f759e07237b4"
+  const message6 = "d183ddc6e2665aa4e2f088af"
+  const message7 = "ac55fb33a75909ed"
+  const message8 = "96012096"
+  const message9 = ""
+
+  const committedMessage0 = "5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3"
+  const committedMessage1 = "a75d8b634891af92282cc81a675972d1929d3149863c1fc0"
+  const committedMessage2 = "835889a40744813a892eff9deb1edaeb"
+  const committedMessage3 = "e1ca9729410dc6ba"
+  const committedMessage4 = ""
+
+  const messages = [
+    message0,
+    message1,
+    message2,
+    message3,
+    message4,
+    message5,
+    message6,
+    message7,
+    message8,
+    message9,
+  ]
+
+  const committedMessages = [
+    committedMessage0,
+    committedMessage1,
+    committedMessage2,
+    committedMessage3,
+    committedMessage4,
+  ]
+
+  const disclosedIndexes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  const disclosedCommittedIndexes = [0, 2, 4]
+
+  const disclosedMessages = disclosedIndexes.map((i) => messages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
+
+  const signature = "a671299573ec1e179a92e97ebc5927698327c11e2c56608e674fff2aaf2e1a4a" +
+    "d9ddffcb412391c447cdf09c30e8e95d1888e3f8cc0f58a170b1a4c45e21d1d4" +
+    "1a387bcfff7275ae96b00d6f805bb32e"
+
+  const nymSecret = "3183d923c36e56a823ea4ae0de4287ca87ff06e5785a57268b39a5fa0269bbdc"
+  const proverBlindness = "1ade8b27cccac993dfe3d57be0cd1a200a5cae52d9ea525f106c94f06fea89c3"
+  const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
+
+  const { proof, pseudonym } = pseudo.prove(
+    publicKey,
+    signature,
+    header,
+    presentationHeader,
+    nymSecret,
+    contextId,
+    messages,
+    committedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    proverBlindness,
+    cipher,
+  )
+  const result = pseudo.validate(
+    publicKey,
+    proof,
+    header,
+    presentationHeader,
+    pseudonym,
+    contextId,
+    10,
+    disclosedMessages,
+    disclosedCommittedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    cipher,
+  )
+  assert(result)
+})
+
+Deno.test("Shake-256 proof, all committed messages, half signer messages", () => {
+  const cipher = CONSTANT.Cipher.XOF_SHAKE_256
+
+  const header = "11223344556677889900aabbccddeeff"
+  const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
+
+  const publicKey = "a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28" +
+    "51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f" +
+    "1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c"
+
+  const message0 = "9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02"
+  const message1 = "c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80"
+  const message2 = "7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73"
+  const message3 = "77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c"
+  const message4 = "496694774c5604ab1b2544eababcf0f53278ff50"
+  const message5 = "515ae153e22aae04ad16f759e07237b4"
+  const message6 = "d183ddc6e2665aa4e2f088af"
+  const message7 = "ac55fb33a75909ed"
+  const message8 = "96012096"
+  const message9 = ""
+
+  const committedMessage0 = "5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3"
+  const committedMessage1 = "a75d8b634891af92282cc81a675972d1929d3149863c1fc0"
+  const committedMessage2 = "835889a40744813a892eff9deb1edaeb"
+  const committedMessage3 = "e1ca9729410dc6ba"
+  const committedMessage4 = ""
+
+  const messages = [
+    message0,
+    message1,
+    message2,
+    message3,
+    message4,
+    message5,
+    message6,
+    message7,
+    message8,
+    message9,
+  ]
+
+  const committedMessages = [
+    committedMessage0,
+    committedMessage1,
+    committedMessage2,
+    committedMessage3,
+    committedMessage4,
+  ]
+
+  const disclosedIndexes = [0, 2, 4, 6, 8]
+  const disclosedCommittedIndexes = [0, 1, 2, 3, 4]
+
+  const disclosedMessages = disclosedIndexes.map((i) => messages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
+
+  const signature = "a671299573ec1e179a92e97ebc5927698327c11e2c56608e674fff2aaf2e1a4a" +
+    "d9ddffcb412391c447cdf09c30e8e95d1888e3f8cc0f58a170b1a4c45e21d1d4" +
+    "1a387bcfff7275ae96b00d6f805bb32e"
+
+  const nymSecret = "3183d923c36e56a823ea4ae0de4287ca87ff06e5785a57268b39a5fa0269bbdc"
+  const proverBlindness = "1ade8b27cccac993dfe3d57be0cd1a200a5cae52d9ea525f106c94f06fea89c3"
+  const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
+
+  const { proof, pseudonym } = pseudo.prove(
+    publicKey,
+    signature,
+    header,
+    presentationHeader,
+    nymSecret,
+    contextId,
+    messages,
+    committedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    proverBlindness,
+    cipher,
+  )
+  const result = pseudo.validate(
+    publicKey,
+    proof,
+    header,
+    presentationHeader,
+    pseudonym,
+    contextId,
+    10,
+    disclosedMessages,
+    disclosedCommittedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    cipher,
+  )
+  assert(result)
+})
+
+Deno.test("Shake-256 proof, half committed messages, half signer messages", () => {
+  const cipher = CONSTANT.Cipher.XOF_SHAKE_256
+
+  const header = "11223344556677889900aabbccddeeff"
+  const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
+
+  const publicKey = "a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28" +
+    "51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f" +
+    "1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c"
+
+  const message0 = "9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02"
+  const message1 = "c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80"
+  const message2 = "7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73"
+  const message3 = "77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c"
+  const message4 = "496694774c5604ab1b2544eababcf0f53278ff50"
+  const message5 = "515ae153e22aae04ad16f759e07237b4"
+  const message6 = "d183ddc6e2665aa4e2f088af"
+  const message7 = "ac55fb33a75909ed"
+  const message8 = "96012096"
+  const message9 = ""
+
+  const committedMessage0 = "5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3"
+  const committedMessage1 = "a75d8b634891af92282cc81a675972d1929d3149863c1fc0"
+  const committedMessage2 = "835889a40744813a892eff9deb1edaeb"
+  const committedMessage3 = "e1ca9729410dc6ba"
+  const committedMessage4 = ""
+
+  const messages = [
+    message0,
+    message1,
+    message2,
+    message3,
+    message4,
+    message5,
+    message6,
+    message7,
+    message8,
+    message9,
+  ]
+
+  const committedMessages = [
+    committedMessage0,
+    committedMessage1,
+    committedMessage2,
+    committedMessage3,
+    committedMessage4,
+  ]
+
+  const disclosedIndexes = [0, 2, 4, 6, 8]
+  const disclosedCommittedIndexes = [0, 2, 4]
+
+  const disclosedMessages = disclosedIndexes.map((i) => messages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
+
+  const signature = "a671299573ec1e179a92e97ebc5927698327c11e2c56608e674fff2aaf2e1a4a" +
+    "d9ddffcb412391c447cdf09c30e8e95d1888e3f8cc0f58a170b1a4c45e21d1d4" +
+    "1a387bcfff7275ae96b00d6f805bb32e"
+
+  const nymSecret = "3183d923c36e56a823ea4ae0de4287ca87ff06e5785a57268b39a5fa0269bbdc"
+  const proverBlindness = "1ade8b27cccac993dfe3d57be0cd1a200a5cae52d9ea525f106c94f06fea89c3"
+  const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
+
+  const { proof, pseudonym } = pseudo.prove(
+    publicKey,
+    signature,
+    header,
+    presentationHeader,
+    nymSecret,
+    contextId,
+    messages,
+    committedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    proverBlindness,
+    cipher,
+  )
+  const result = pseudo.validate(
+    publicKey,
+    proof,
+    header,
+    presentationHeader,
+    pseudonym,
+    contextId,
+    10,
+    disclosedMessages,
+    disclosedCommittedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    cipher,
+  )
+  assert(result)
+})
+
+Deno.test("Shake-256 proof, half committed messages, no signer messages", () => {
+  const cipher = CONSTANT.Cipher.XOF_SHAKE_256
+
+  const header = "11223344556677889900aabbccddeeff"
+  const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
+
+  const publicKey = "a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28" +
+    "51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f" +
+    "1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c"
+
+  const message0 = "9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02"
+  const message1 = "c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80"
+  const message2 = "7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73"
+  const message3 = "77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c"
+  const message4 = "496694774c5604ab1b2544eababcf0f53278ff50"
+  const message5 = "515ae153e22aae04ad16f759e07237b4"
+  const message6 = "d183ddc6e2665aa4e2f088af"
+  const message7 = "ac55fb33a75909ed"
+  const message8 = "96012096"
+  const message9 = ""
+
+  const committedMessage0 = "5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3"
+  const committedMessage1 = "a75d8b634891af92282cc81a675972d1929d3149863c1fc0"
+  const committedMessage2 = "835889a40744813a892eff9deb1edaeb"
+  const committedMessage3 = "e1ca9729410dc6ba"
+  const committedMessage4 = ""
+
+  const messages = [
+    message0,
+    message1,
+    message2,
+    message3,
+    message4,
+    message5,
+    message6,
+    message7,
+    message8,
+    message9,
+  ]
+
+  const committedMessages = [
+    committedMessage0,
+    committedMessage1,
+    committedMessage2,
+    committedMessage3,
+    committedMessage4,
+  ]
+
+  const disclosedIndexes = [0, 2, 4, 6, 8]
+  const disclosedCommittedIndexes: Array<number> = []
+
+  const disclosedMessages = disclosedIndexes.map((i) => messages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
+
+  const signature = "a671299573ec1e179a92e97ebc5927698327c11e2c56608e674fff2aaf2e1a4a" +
+    "d9ddffcb412391c447cdf09c30e8e95d1888e3f8cc0f58a170b1a4c45e21d1d4" +
+    "1a387bcfff7275ae96b00d6f805bb32e"
+
+  const nymSecret = "3183d923c36e56a823ea4ae0de4287ca87ff06e5785a57268b39a5fa0269bbdc"
+  const proverBlindness = "1ade8b27cccac993dfe3d57be0cd1a200a5cae52d9ea525f106c94f06fea89c3"
+  const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
+
+  const { proof, pseudonym } = pseudo.prove(
+    publicKey,
+    signature,
+    header,
+    presentationHeader,
+    nymSecret,
+    contextId,
+    messages,
+    committedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    proverBlindness,
+    cipher,
+  )
+  const result = pseudo.validate(
+    publicKey,
+    proof,
+    header,
+    presentationHeader,
+    pseudonym,
+    contextId,
+    10,
+    disclosedMessages,
+    disclosedCommittedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    cipher,
+  )
+  assert(result)
+})
+
+Deno.test("Shake-256 proof, no committed messages, half signer messages", () => {
+  const cipher = CONSTANT.Cipher.XOF_SHAKE_256
+
+  const header = "11223344556677889900aabbccddeeff"
+  const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
+
+  const publicKey = "a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28" +
+    "51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f" +
+    "1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c"
+
+  const message0 = "9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02"
+  const message1 = "c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80"
+  const message2 = "7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73"
+  const message3 = "77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c"
+  const message4 = "496694774c5604ab1b2544eababcf0f53278ff50"
+  const message5 = "515ae153e22aae04ad16f759e07237b4"
+  const message6 = "d183ddc6e2665aa4e2f088af"
+  const message7 = "ac55fb33a75909ed"
+  const message8 = "96012096"
+  const message9 = ""
+
+  const committedMessage0 = "5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3"
+  const committedMessage1 = "a75d8b634891af92282cc81a675972d1929d3149863c1fc0"
+  const committedMessage2 = "835889a40744813a892eff9deb1edaeb"
+  const committedMessage3 = "e1ca9729410dc6ba"
+  const committedMessage4 = ""
+
+  const messages = [
+    message0,
+    message1,
+    message2,
+    message3,
+    message4,
+    message5,
+    message6,
+    message7,
+    message8,
+    message9,
+  ]
+
+  const committedMessages = [
+    committedMessage0,
+    committedMessage1,
+    committedMessage2,
+    committedMessage3,
+    committedMessage4,
+  ]
+
+  const disclosedIndexes: Array<number> = []
+  const disclosedCommittedIndexes = [0, 2, 4]
+
+  const disclosedMessages = disclosedIndexes.map((i) => messages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
+
+  const signature = "a671299573ec1e179a92e97ebc5927698327c11e2c56608e674fff2aaf2e1a4a" +
+    "d9ddffcb412391c447cdf09c30e8e95d1888e3f8cc0f58a170b1a4c45e21d1d4" +
+    "1a387bcfff7275ae96b00d6f805bb32e"
+
+  const nymSecret = "3183d923c36e56a823ea4ae0de4287ca87ff06e5785a57268b39a5fa0269bbdc"
+  const proverBlindness = "1ade8b27cccac993dfe3d57be0cd1a200a5cae52d9ea525f106c94f06fea89c3"
+  const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
+
+  const { proof, pseudonym } = pseudo.prove(
+    publicKey,
+    signature,
+    header,
+    presentationHeader,
+    nymSecret,
+    contextId,
+    messages,
+    committedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    proverBlindness,
+    cipher,
+  )
+  const result = pseudo.validate(
+    publicKey,
+    proof,
+    header,
+    presentationHeader,
+    pseudonym,
+    contextId,
+    10,
+    disclosedMessages,
+    disclosedCommittedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    cipher,
+  )
+  assert(result)
+})
+
+Deno.test("Shake-256 proof, no committed messages, no signer messages", () => {
+  const cipher = CONSTANT.Cipher.XOF_SHAKE_256
+
+  const header = "11223344556677889900aabbccddeeff"
+  const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
+
+  const publicKey = "a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28" +
+    "51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f" +
+    "1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c"
+
+  const message0 = "9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02"
+  const message1 = "c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80"
+  const message2 = "7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73"
+  const message3 = "77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c"
+  const message4 = "496694774c5604ab1b2544eababcf0f53278ff50"
+  const message5 = "515ae153e22aae04ad16f759e07237b4"
+  const message6 = "d183ddc6e2665aa4e2f088af"
+  const message7 = "ac55fb33a75909ed"
+  const message8 = "96012096"
+  const message9 = ""
+
+  const committedMessage0 = "5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3"
+  const committedMessage1 = "a75d8b634891af92282cc81a675972d1929d3149863c1fc0"
+  const committedMessage2 = "835889a40744813a892eff9deb1edaeb"
+  const committedMessage3 = "e1ca9729410dc6ba"
+  const committedMessage4 = ""
+
+  const messages = [
+    message0,
+    message1,
+    message2,
+    message3,
+    message4,
+    message5,
+    message6,
+    message7,
+    message8,
+    message9,
+  ]
+
+  const committedMessages = [
+    committedMessage0,
+    committedMessage1,
+    committedMessage2,
+    committedMessage3,
+    committedMessage4,
+  ]
+
+  const disclosedIndexes: Array<number> = []
+  const disclosedCommittedIndexes: Array<number> = []
+
+  const disclosedMessages = disclosedIndexes.map((i) => messages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
+
+  const signature = "a671299573ec1e179a92e97ebc5927698327c11e2c56608e674fff2aaf2e1a4a" +
+    "d9ddffcb412391c447cdf09c30e8e95d1888e3f8cc0f58a170b1a4c45e21d1d4" +
+    "1a387bcfff7275ae96b00d6f805bb32e"
+
+  const nymSecret = "3183d923c36e56a823ea4ae0de4287ca87ff06e5785a57268b39a5fa0269bbdc"
+  const proverBlindness = "1ade8b27cccac993dfe3d57be0cd1a200a5cae52d9ea525f106c94f06fea89c3"
+  const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
+
+  const { proof, pseudonym } = pseudo.prove(
+    publicKey,
+    signature,
+    header,
+    presentationHeader,
+    nymSecret,
+    contextId,
+    messages,
+    committedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    proverBlindness,
+    cipher,
+  )
+  const result = pseudo.validate(
+    publicKey,
+    proof,
+    header,
+    presentationHeader,
+    pseudonym,
+    contextId,
+    10,
+    disclosedMessages,
+    disclosedCommittedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    cipher,
+  )
+  assert(result)
+})
+
 Deno.test("Sha-256 signature, no prover committed messages, no signer messages", () => {
   const cipher = CONSTANT.Cipher.XMD_SHA_256
 
@@ -382,6 +1033,657 @@ Deno.test("Sha-256 signature, multiple prover committed messages, multiple signe
     proverNym,
     signerNym,
     proverBlind,
+    cipher,
+  )
+  assert(result)
+})
+
+Deno.test("Sha-256 proof, all committed messages, all signer messages", () => {
+  const cipher = CONSTANT.Cipher.XMD_SHA_256
+
+  const header = "11223344556677889900aabbccddeeff"
+  const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
+
+  const publicKey = "a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28" +
+    "51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f" +
+    "1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c"
+
+  const message0 = "9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02"
+  const message1 = "c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80"
+  const message2 = "7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73"
+  const message3 = "77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c"
+  const message4 = "496694774c5604ab1b2544eababcf0f53278ff50"
+  const message5 = "515ae153e22aae04ad16f759e07237b4"
+  const message6 = "d183ddc6e2665aa4e2f088af"
+  const message7 = "ac55fb33a75909ed"
+  const message8 = "96012096"
+  const message9 = ""
+
+  const committedMessage0 = "5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3"
+  const committedMessage1 = "a75d8b634891af92282cc81a675972d1929d3149863c1fc0"
+  const committedMessage2 = "835889a40744813a892eff9deb1edaeb"
+  const committedMessage3 = "e1ca9729410dc6ba"
+  const committedMessage4 = ""
+
+  const messages = [
+    message0,
+    message1,
+    message2,
+    message3,
+    message4,
+    message5,
+    message6,
+    message7,
+    message8,
+    message9,
+  ]
+
+  const committedMessages = [
+    committedMessage0,
+    committedMessage1,
+    committedMessage2,
+    committedMessage3,
+    committedMessage4,
+  ]
+
+  const disclosedIndexes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  const disclosedCommittedIndexes = [0, 1, 2, 3, 4]
+
+  const disclosedMessages = disclosedIndexes.map((i) => messages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
+
+  const signature = "99f409633ab1140121a94508a25d3ef7fe9d7da3559408502e81331f80cbddb6" +
+    "21a99c02b6bab14c44aaf35b19006a1d0a91f0ac5a47b9c0a99a290c3f36debe" +
+    "34c00ca333a9006e769b4930e39210c8"
+
+  const nymSecret = "3183d923c36e56a823ea4ae0de4287ca87ff06e5785a57268b39a5fa0269bbdc"
+  const proverBlindness = "15494ae70742a6a4f420106c79ee405c138557385f3f6f7256449d147ebf22b8"
+  const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
+
+  const { proof, pseudonym } = pseudo.prove(
+    publicKey,
+    signature,
+    header,
+    presentationHeader,
+    nymSecret,
+    contextId,
+    messages,
+    committedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    proverBlindness,
+    cipher,
+  )
+  const result = pseudo.validate(
+    publicKey,
+    proof,
+    header,
+    presentationHeader,
+    pseudonym,
+    contextId,
+    10,
+    disclosedMessages,
+    disclosedCommittedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    cipher,
+  )
+  assert(result)
+})
+
+Deno.test("Sha-256 proof, half committed messages, all signer messages", () => {
+  const cipher = CONSTANT.Cipher.XMD_SHA_256
+
+  const header = "11223344556677889900aabbccddeeff"
+  const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
+
+  const publicKey = "a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28" +
+    "51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f" +
+    "1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c"
+
+  const message0 = "9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02"
+  const message1 = "c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80"
+  const message2 = "7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73"
+  const message3 = "77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c"
+  const message4 = "496694774c5604ab1b2544eababcf0f53278ff50"
+  const message5 = "515ae153e22aae04ad16f759e07237b4"
+  const message6 = "d183ddc6e2665aa4e2f088af"
+  const message7 = "ac55fb33a75909ed"
+  const message8 = "96012096"
+  const message9 = ""
+
+  const committedMessage0 = "5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3"
+  const committedMessage1 = "a75d8b634891af92282cc81a675972d1929d3149863c1fc0"
+  const committedMessage2 = "835889a40744813a892eff9deb1edaeb"
+  const committedMessage3 = "e1ca9729410dc6ba"
+  const committedMessage4 = ""
+
+  const messages = [
+    message0,
+    message1,
+    message2,
+    message3,
+    message4,
+    message5,
+    message6,
+    message7,
+    message8,
+    message9,
+  ]
+
+  const committedMessages = [
+    committedMessage0,
+    committedMessage1,
+    committedMessage2,
+    committedMessage3,
+    committedMessage4,
+  ]
+
+  const disclosedIndexes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+  const disclosedCommittedIndexes = [0, 2, 4]
+
+  const disclosedMessages = disclosedIndexes.map((i) => messages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
+
+  const signature = "99f409633ab1140121a94508a25d3ef7fe9d7da3559408502e81331f80cbddb6" +
+    "21a99c02b6bab14c44aaf35b19006a1d0a91f0ac5a47b9c0a99a290c3f36debe" +
+    "34c00ca333a9006e769b4930e39210c8"
+
+  const nymSecret = "3183d923c36e56a823ea4ae0de4287ca87ff06e5785a57268b39a5fa0269bbdc"
+  const proverBlindness = "15494ae70742a6a4f420106c79ee405c138557385f3f6f7256449d147ebf22b8"
+  const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
+
+  const { proof, pseudonym } = pseudo.prove(
+    publicKey,
+    signature,
+    header,
+    presentationHeader,
+    nymSecret,
+    contextId,
+    messages,
+    committedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    proverBlindness,
+    cipher,
+  )
+  const result = pseudo.validate(
+    publicKey,
+    proof,
+    header,
+    presentationHeader,
+    pseudonym,
+    contextId,
+    10,
+    disclosedMessages,
+    disclosedCommittedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    cipher,
+  )
+  assert(result)
+})
+
+Deno.test("Shake-256 proof, all committed messages, half signer messages", () => {
+  const cipher = CONSTANT.Cipher.XMD_SHA_256
+
+  const header = "11223344556677889900aabbccddeeff"
+  const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
+
+  const publicKey = "a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28" +
+    "51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f" +
+    "1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c"
+
+  const message0 = "9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02"
+  const message1 = "c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80"
+  const message2 = "7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73"
+  const message3 = "77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c"
+  const message4 = "496694774c5604ab1b2544eababcf0f53278ff50"
+  const message5 = "515ae153e22aae04ad16f759e07237b4"
+  const message6 = "d183ddc6e2665aa4e2f088af"
+  const message7 = "ac55fb33a75909ed"
+  const message8 = "96012096"
+  const message9 = ""
+
+  const committedMessage0 = "5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3"
+  const committedMessage1 = "a75d8b634891af92282cc81a675972d1929d3149863c1fc0"
+  const committedMessage2 = "835889a40744813a892eff9deb1edaeb"
+  const committedMessage3 = "e1ca9729410dc6ba"
+  const committedMessage4 = ""
+
+  const messages = [
+    message0,
+    message1,
+    message2,
+    message3,
+    message4,
+    message5,
+    message6,
+    message7,
+    message8,
+    message9,
+  ]
+
+  const committedMessages = [
+    committedMessage0,
+    committedMessage1,
+    committedMessage2,
+    committedMessage3,
+    committedMessage4,
+  ]
+
+  const disclosedIndexes = [0, 2, 4, 6, 8]
+  const disclosedCommittedIndexes = [0, 1, 2, 3, 4]
+
+  const disclosedMessages = disclosedIndexes.map((i) => messages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
+
+  const signature = "99f409633ab1140121a94508a25d3ef7fe9d7da3559408502e81331f80cbddb6" +
+    "21a99c02b6bab14c44aaf35b19006a1d0a91f0ac5a47b9c0a99a290c3f36debe" +
+    "34c00ca333a9006e769b4930e39210c8"
+
+  const nymSecret = "3183d923c36e56a823ea4ae0de4287ca87ff06e5785a57268b39a5fa0269bbdc"
+  const proverBlindness = "15494ae70742a6a4f420106c79ee405c138557385f3f6f7256449d147ebf22b8"
+  const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
+
+  const { proof, pseudonym } = pseudo.prove(
+    publicKey,
+    signature,
+    header,
+    presentationHeader,
+    nymSecret,
+    contextId,
+    messages,
+    committedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    proverBlindness,
+    cipher,
+  )
+  const result = pseudo.validate(
+    publicKey,
+    proof,
+    header,
+    presentationHeader,
+    pseudonym,
+    contextId,
+    10,
+    disclosedMessages,
+    disclosedCommittedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    cipher,
+  )
+  assert(result)
+})
+
+Deno.test("Shake-256 proof, half committed messages, half signer messages", () => {
+  const cipher = CONSTANT.Cipher.XMD_SHA_256
+
+  const header = "11223344556677889900aabbccddeeff"
+  const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
+
+  const publicKey = "a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28" +
+    "51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f" +
+    "1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c"
+
+  const message0 = "9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02"
+  const message1 = "c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80"
+  const message2 = "7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73"
+  const message3 = "77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c"
+  const message4 = "496694774c5604ab1b2544eababcf0f53278ff50"
+  const message5 = "515ae153e22aae04ad16f759e07237b4"
+  const message6 = "d183ddc6e2665aa4e2f088af"
+  const message7 = "ac55fb33a75909ed"
+  const message8 = "96012096"
+  const message9 = ""
+
+  const committedMessage0 = "5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3"
+  const committedMessage1 = "a75d8b634891af92282cc81a675972d1929d3149863c1fc0"
+  const committedMessage2 = "835889a40744813a892eff9deb1edaeb"
+  const committedMessage3 = "e1ca9729410dc6ba"
+  const committedMessage4 = ""
+
+  const messages = [
+    message0,
+    message1,
+    message2,
+    message3,
+    message4,
+    message5,
+    message6,
+    message7,
+    message8,
+    message9,
+  ]
+
+  const committedMessages = [
+    committedMessage0,
+    committedMessage1,
+    committedMessage2,
+    committedMessage3,
+    committedMessage4,
+  ]
+
+  const disclosedIndexes = [0, 2, 4, 6, 8]
+  const disclosedCommittedIndexes = [0, 2, 4]
+
+  const disclosedMessages = disclosedIndexes.map((i) => messages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
+
+  const signature = "99f409633ab1140121a94508a25d3ef7fe9d7da3559408502e81331f80cbddb6" +
+    "21a99c02b6bab14c44aaf35b19006a1d0a91f0ac5a47b9c0a99a290c3f36debe" +
+    "34c00ca333a9006e769b4930e39210c8"
+
+  const nymSecret = "3183d923c36e56a823ea4ae0de4287ca87ff06e5785a57268b39a5fa0269bbdc"
+  const proverBlindness = "15494ae70742a6a4f420106c79ee405c138557385f3f6f7256449d147ebf22b8"
+  const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
+
+  const { proof, pseudonym } = pseudo.prove(
+    publicKey,
+    signature,
+    header,
+    presentationHeader,
+    nymSecret,
+    contextId,
+    messages,
+    committedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    proverBlindness,
+    cipher,
+  )
+  const result = pseudo.validate(
+    publicKey,
+    proof,
+    header,
+    presentationHeader,
+    pseudonym,
+    contextId,
+    10,
+    disclosedMessages,
+    disclosedCommittedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    cipher,
+  )
+  assert(result)
+})
+
+Deno.test("Shake-256 proof, half committed messages, no signer messages", () => {
+  const cipher = CONSTANT.Cipher.XMD_SHA_256
+
+  const header = "11223344556677889900aabbccddeeff"
+  const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
+
+  const publicKey = "a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28" +
+    "51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f" +
+    "1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c"
+
+  const message0 = "9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02"
+  const message1 = "c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80"
+  const message2 = "7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73"
+  const message3 = "77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c"
+  const message4 = "496694774c5604ab1b2544eababcf0f53278ff50"
+  const message5 = "515ae153e22aae04ad16f759e07237b4"
+  const message6 = "d183ddc6e2665aa4e2f088af"
+  const message7 = "ac55fb33a75909ed"
+  const message8 = "96012096"
+  const message9 = ""
+
+  const committedMessage0 = "5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3"
+  const committedMessage1 = "a75d8b634891af92282cc81a675972d1929d3149863c1fc0"
+  const committedMessage2 = "835889a40744813a892eff9deb1edaeb"
+  const committedMessage3 = "e1ca9729410dc6ba"
+  const committedMessage4 = ""
+
+  const messages = [
+    message0,
+    message1,
+    message2,
+    message3,
+    message4,
+    message5,
+    message6,
+    message7,
+    message8,
+    message9,
+  ]
+
+  const committedMessages = [
+    committedMessage0,
+    committedMessage1,
+    committedMessage2,
+    committedMessage3,
+    committedMessage4,
+  ]
+
+  const disclosedIndexes = [0, 2, 4, 6, 8]
+  const disclosedCommittedIndexes: Array<number> = []
+
+  const disclosedMessages = disclosedIndexes.map((i) => messages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
+
+  const signature = "99f409633ab1140121a94508a25d3ef7fe9d7da3559408502e81331f80cbddb6" +
+    "21a99c02b6bab14c44aaf35b19006a1d0a91f0ac5a47b9c0a99a290c3f36debe" +
+    "34c00ca333a9006e769b4930e39210c8"
+
+  const nymSecret = "3183d923c36e56a823ea4ae0de4287ca87ff06e5785a57268b39a5fa0269bbdc"
+  const proverBlindness = "15494ae70742a6a4f420106c79ee405c138557385f3f6f7256449d147ebf22b8"
+  const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
+
+  const { proof, pseudonym } = pseudo.prove(
+    publicKey,
+    signature,
+    header,
+    presentationHeader,
+    nymSecret,
+    contextId,
+    messages,
+    committedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    proverBlindness,
+    cipher,
+  )
+  const result = pseudo.validate(
+    publicKey,
+    proof,
+    header,
+    presentationHeader,
+    pseudonym,
+    contextId,
+    10,
+    disclosedMessages,
+    disclosedCommittedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    cipher,
+  )
+  assert(result)
+})
+
+Deno.test("Shake-256 proof, no committed messages, half signer messages", () => {
+  const cipher = CONSTANT.Cipher.XMD_SHA_256
+
+  const header = "11223344556677889900aabbccddeeff"
+  const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
+
+  const publicKey = "a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28" +
+    "51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f" +
+    "1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c"
+
+  const message0 = "9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02"
+  const message1 = "c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80"
+  const message2 = "7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73"
+  const message3 = "77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c"
+  const message4 = "496694774c5604ab1b2544eababcf0f53278ff50"
+  const message5 = "515ae153e22aae04ad16f759e07237b4"
+  const message6 = "d183ddc6e2665aa4e2f088af"
+  const message7 = "ac55fb33a75909ed"
+  const message8 = "96012096"
+  const message9 = ""
+
+  const committedMessage0 = "5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3"
+  const committedMessage1 = "a75d8b634891af92282cc81a675972d1929d3149863c1fc0"
+  const committedMessage2 = "835889a40744813a892eff9deb1edaeb"
+  const committedMessage3 = "e1ca9729410dc6ba"
+  const committedMessage4 = ""
+
+  const messages = [
+    message0,
+    message1,
+    message2,
+    message3,
+    message4,
+    message5,
+    message6,
+    message7,
+    message8,
+    message9,
+  ]
+
+  const committedMessages = [
+    committedMessage0,
+    committedMessage1,
+    committedMessage2,
+    committedMessage3,
+    committedMessage4,
+  ]
+
+  const disclosedIndexes: Array<number> = []
+  const disclosedCommittedIndexes = [0, 2, 4]
+
+  const disclosedMessages = disclosedIndexes.map((i) => messages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
+
+  const signature = "99f409633ab1140121a94508a25d3ef7fe9d7da3559408502e81331f80cbddb6" +
+    "21a99c02b6bab14c44aaf35b19006a1d0a91f0ac5a47b9c0a99a290c3f36debe" +
+    "34c00ca333a9006e769b4930e39210c8"
+
+  const nymSecret = "3183d923c36e56a823ea4ae0de4287ca87ff06e5785a57268b39a5fa0269bbdc"
+  const proverBlindness = "15494ae70742a6a4f420106c79ee405c138557385f3f6f7256449d147ebf22b8"
+  const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
+
+  const { proof, pseudonym } = pseudo.prove(
+    publicKey,
+    signature,
+    header,
+    presentationHeader,
+    nymSecret,
+    contextId,
+    messages,
+    committedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    proverBlindness,
+    cipher,
+  )
+  const result = pseudo.validate(
+    publicKey,
+    proof,
+    header,
+    presentationHeader,
+    pseudonym,
+    contextId,
+    10,
+    disclosedMessages,
+    disclosedCommittedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    cipher,
+  )
+  assert(result)
+})
+
+Deno.test("Shake-256 proof, no committed messages, no signer messages", () => {
+  const cipher = CONSTANT.Cipher.XMD_SHA_256
+
+  const header = "11223344556677889900aabbccddeeff"
+  const presentationHeader = "bed231d880675ed101ead304512e043ade9958dd0241ea70b4b3957fba941501"
+
+  const publicKey = "a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28" +
+    "51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f" +
+    "1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c"
+
+  const message0 = "9872ad089e452c7b6e283dfac2a80d58e8d0ff71cc4d5e310a1debdda4a45f02"
+  const message1 = "c344136d9ab02da4dd5908bbba913ae6f58c2cc844b802a6f811f5fb075f9b80"
+  const message2 = "7372e9daa5ed31e6cd5c825eac1b855e84476a1d94932aa348e07b73"
+  const message3 = "77fe97eb97a1ebe2e81e4e3597a3ee740a66e9ef2412472c"
+  const message4 = "496694774c5604ab1b2544eababcf0f53278ff50"
+  const message5 = "515ae153e22aae04ad16f759e07237b4"
+  const message6 = "d183ddc6e2665aa4e2f088af"
+  const message7 = "ac55fb33a75909ed"
+  const message8 = "96012096"
+  const message9 = ""
+
+  const committedMessage0 = "5982967821da3c5983496214df36aa5e58de6fa25314af4cf4c00400779f08c3"
+  const committedMessage1 = "a75d8b634891af92282cc81a675972d1929d3149863c1fc0"
+  const committedMessage2 = "835889a40744813a892eff9deb1edaeb"
+  const committedMessage3 = "e1ca9729410dc6ba"
+  const committedMessage4 = ""
+
+  const messages = [
+    message0,
+    message1,
+    message2,
+    message3,
+    message4,
+    message5,
+    message6,
+    message7,
+    message8,
+    message9,
+  ]
+
+  const committedMessages = [
+    committedMessage0,
+    committedMessage1,
+    committedMessage2,
+    committedMessage3,
+    committedMessage4,
+  ]
+
+  const disclosedIndexes: Array<number> = []
+  const disclosedCommittedIndexes: Array<number> = []
+
+  const disclosedMessages = disclosedIndexes.map((i) => messages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
+
+  const signature = "99f409633ab1140121a94508a25d3ef7fe9d7da3559408502e81331f80cbddb6" +
+    "21a99c02b6bab14c44aaf35b19006a1d0a91f0ac5a47b9c0a99a290c3f36debe" +
+    "34c00ca333a9006e769b4930e39210c8"
+
+  const nymSecret = "3183d923c36e56a823ea4ae0de4287ca87ff06e5785a57268b39a5fa0269bbdc"
+  const proverBlindness = "15494ae70742a6a4f420106c79ee405c138557385f3f6f7256449d147ebf22b8"
+  const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
+
+  const { proof, pseudonym } = pseudo.prove(
+    publicKey,
+    signature,
+    header,
+    presentationHeader,
+    nymSecret,
+    contextId,
+    messages,
+    committedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
+    proverBlindness,
+    cipher,
+  )
+  const result = pseudo.validate(
+    publicKey,
+    proof,
+    header,
+    presentationHeader,
+    pseudonym,
+    contextId,
+    10,
+    disclosedMessages,
+    disclosedCommittedMessages,
+    disclosedIndexes,
+    disclosedCommittedIndexes,
     cipher,
   )
   assert(result)

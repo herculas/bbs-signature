@@ -290,7 +290,7 @@ pub fn blind_prove(
     messages: JsValue,
     committed_messages: JsValue,
     disclosed_indexes: JsValue,
-    disclosed_commitment_indexes: JsValue,
+    disclosed_committed_indexes: JsValue,
     prover_blind: JsValue,
     cipher: JsValue,
 ) -> JsValue {
@@ -322,10 +322,10 @@ pub fn blind_prove(
     } else {
         None
     };
-    let disclosed_commitment_indexes: Option<Vec<usize>> =
-        if !disclosed_commitment_indexes.is_undefined() {
+    let disclosed_committed_indexes: Option<Vec<usize>> =
+        if !disclosed_committed_indexes.is_undefined() {
             Some(
-                Vec::<usize>::import(&disclosed_commitment_indexes)
+                Vec::<usize>::import(&disclosed_committed_indexes)
                     .iter()
                     .map(|idx| *idx)
                     .collect(),
@@ -344,7 +344,7 @@ pub fn blind_prove(
         messages.as_ref(),
         committed_messages.as_ref(),
         disclosed_indexes.as_ref(),
-        disclosed_commitment_indexes.as_ref(),
+        disclosed_committed_indexes.as_ref(),
         prover_blind.as_ref(),
         &cipher,
         None,
@@ -360,9 +360,9 @@ pub fn blind_validate(
     presentation_header: JsValue,
     l: JsValue,
     disclosed_messages: JsValue,
-    disclosed_commitment_messages: JsValue,
+    disclosed_committed_messages: JsValue,
     disclosed_indexes: JsValue,
-    disclosed_commitment_indexes: JsValue,
+    disclosed_committed_indexes: JsValue,
     cipher: JsValue,
 ) -> JsValue {
     console_error_panic_hook::set_once();
@@ -376,12 +376,12 @@ pub fn blind_validate(
     let l = import_option_usize(&l);
 
     let disclosed_messages = import_option_vec_bytes(&disclosed_messages);
-    let disclosed_commitment_messages = import_option_vec_bytes(&disclosed_commitment_messages);
+    let disclosed_committed_messages = import_option_vec_bytes(&disclosed_committed_messages);
 
     let disclosed_messages: Option<Vec<&[u8]>> = disclosed_messages
         .as_ref()
         .map(|vec| vec.iter().map(|msg| msg.as_slice()).collect());
-    let disclosed_commitment_messages: Option<Vec<&[u8]>> = disclosed_commitment_messages
+    let disclosed_committed_messages: Option<Vec<&[u8]>> = disclosed_committed_messages
         .as_ref()
         .map(|vec| vec.iter().map(|msg| msg.as_slice()).collect());
 
@@ -395,10 +395,10 @@ pub fn blind_validate(
     } else {
         None
     };
-    let disclosed_commitment_indexes: Option<Vec<usize>> =
-        if !disclosed_commitment_indexes.is_undefined() {
+    let disclosed_committed_indexes: Option<Vec<usize>> =
+        if !disclosed_committed_indexes.is_undefined() {
             Some(
-                Vec::<usize>::import(&disclosed_commitment_indexes)
+                Vec::<usize>::import(&disclosed_committed_indexes)
                     .iter()
                     .map(|idx| *idx)
                     .collect(),
@@ -414,9 +414,9 @@ pub fn blind_validate(
         presentation_header.as_deref(),
         l,
         disclosed_messages.as_ref(),
-        disclosed_commitment_messages.as_ref(),
+        disclosed_committed_messages.as_ref(),
         disclosed_indexes.as_ref(),
-        disclosed_commitment_indexes.as_ref(),
+        disclosed_committed_indexes.as_ref(),
         &cipher,
     ))
 }
@@ -546,7 +546,7 @@ pub fn blind_prove_with_nym(
     messages: JsValue,
     committed_messages: JsValue,
     disclosed_indexes: JsValue,
-    disclosed_commitment_indexes: JsValue,
+    disclosed_committed_indexes: JsValue,
     prover_blind: JsValue,
     cipher: JsValue,
 ) -> JsValue {
@@ -581,10 +581,10 @@ pub fn blind_prove_with_nym(
     } else {
         None
     };
-    let disclosed_commitment_indexes: Option<Vec<usize>> =
-        if !disclosed_commitment_indexes.is_undefined() {
+    let disclosed_committed_indexes: Option<Vec<usize>> =
+        if !disclosed_committed_indexes.is_undefined() {
             Some(
-                Vec::<usize>::import(&disclosed_commitment_indexes)
+                Vec::<usize>::import(&disclosed_committed_indexes)
                     .iter()
                     .map(|idx| *idx)
                     .collect(),
@@ -603,7 +603,7 @@ pub fn blind_prove_with_nym(
         messages.as_ref(),
         committed_messages.as_ref(),
         disclosed_indexes.as_ref(),
-        disclosed_commitment_indexes.as_ref(),
+        disclosed_committed_indexes.as_ref(),
         prover_blind.as_ref(),
         &cipher,
         None,
@@ -621,9 +621,9 @@ pub fn blind_validate_with_nym(
     context_id: JsValue,
     l: JsValue,
     disclosed_messages: JsValue,
-    disclosed_commitment_messages: JsValue,
+    disclosed_committed_messages: JsValue,
     disclosed_indexes: JsValue,
-    disclosed_commitment_indexes: JsValue,
+    disclosed_committed_indexes: JsValue,
     cipher: JsValue,
 ) -> JsValue {
     console_error_panic_hook::set_once();
@@ -638,12 +638,12 @@ pub fn blind_validate_with_nym(
     let l = import_option_usize(&l);
 
     let disclosed_messages = import_option_vec_bytes(&disclosed_messages);
-    let disclosed_commitment_messages = import_option_vec_bytes(&disclosed_commitment_messages);
+    let disclosed_committed_messages = import_option_vec_bytes(&disclosed_committed_messages);
 
     let disclosed_messages: Option<Vec<&[u8]>> = disclosed_messages
         .as_ref()
         .map(|vec| vec.iter().map(|msg| msg.as_slice()).collect());
-    let disclosed_commitment_messages: Option<Vec<&[u8]>> = disclosed_commitment_messages
+    let disclosed_committed_messages: Option<Vec<&[u8]>> = disclosed_committed_messages
         .as_ref()
         .map(|vec| vec.iter().map(|msg| msg.as_slice()).collect());
 
@@ -657,10 +657,10 @@ pub fn blind_validate_with_nym(
     } else {
         None
     };
-    let disclosed_commitment_indexes: Option<Vec<usize>> =
-        if !disclosed_commitment_indexes.is_undefined() {
+    let disclosed_committed_indexes: Option<Vec<usize>> =
+        if !disclosed_committed_indexes.is_undefined() {
             Some(
-                Vec::<usize>::import(&disclosed_commitment_indexes)
+                Vec::<usize>::import(&disclosed_committed_indexes)
                     .iter()
                     .map(|idx| *idx)
                     .collect(),
@@ -678,9 +678,9 @@ pub fn blind_validate_with_nym(
         context_id.as_deref(),
         l,
         disclosed_messages.as_ref(),
-        disclosed_commitment_messages.as_ref(),
+        disclosed_committed_messages.as_ref(),
         disclosed_indexes.as_ref(),
-        disclosed_commitment_indexes.as_ref(),
+        disclosed_committed_indexes.as_ref(),
         &cipher,
     ))
 }

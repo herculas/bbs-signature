@@ -115,7 +115,7 @@ export function verify(
  * @param {Array<string>} [messages] A vector of strings representing the messages.
  * @param {Array<string>} [committedMessages] A vector of octet strings representing the committed messages.
  * @param {Array<number>} [disclosedIndexes] A vector of integers representing the indexes of the disclosed messages.
- * @param {Array<number>} [disclosedCommitmentIndexes] Integers representing the indexes of the disclosed commitments.
+ * @param {Array<number>} [disclosedCommittedIndexes] Integers representing the indexes of the disclosed commitments.
  * @param {string} [proverBlindness] A string representing the secret prover blindness.
  * @param {Cipher} [cipher] The cipher suite. If not specified, it defaults to `BLS12_381_G1_XOF_SHAKE_256`.
  *
@@ -131,7 +131,7 @@ export function prove(
   messages?: Array<string>,
   committedMessages?: Array<string>,
   disclosedIndexes?: Array<number>,
-  disclosedCommitmentIndexes?: Array<number>,
+  disclosedCommittedIndexes?: Array<number>,
   proverBlindness?: string,
   cipher: CONSTANT.Cipher = CONSTANT.Cipher.XOF_SHAKE_256,
 ): string {
@@ -143,7 +143,7 @@ export function prove(
     messages,
     committedMessages,
     disclosedIndexes,
-    disclosedCommitmentIndexes,
+    disclosedCommittedIndexes,
     proverBlindness,
     cipher,
   )
@@ -165,9 +165,9 @@ export function prove(
  * @param {string} [presentationHeader] A string containing the presentation header.
  * @param {number} [l] The total number of signer known messages. If not specified, it defaults to 0.
  * @param {Array<string>} [disclosedMessages] A vector of strings representing the disclosed messages.
- * @param {Array<string>} [disclosedCommitmentMessages] Strings representing the disclosed commitment messages.
+ * @param {Array<string>} [disclosedCommittedMessages] Strings representing the disclosed commitment messages.
  * @param {Array<number>} [disclosedIndexes] A vector of integers representing the indexes of the disclosed messages.
- * @param {Array<number>} [disclosedCommitmentIndexes] Integers representing the indexes of the disclosed commitments.
+ * @param {Array<number>} [disclosedCommittedIndexes] Integers representing the indexes of the disclosed commitments.
  * @param {Cipher} [cipher] The cipher suite. If not specified, it defaults to `BLS12_381_G1_XOF_SHAKE_256`.
  *
  * @returns {boolean} `true` if the proof is valid, `false` otherwise.
@@ -181,9 +181,9 @@ export function validate(
   presentationHeader?: string,
   l?: number,
   disclosedMessages?: Array<string>,
-  disclosedCommitmentMessages?: Array<string>,
+  disclosedCommittedMessages?: Array<string>,
   disclosedIndexes?: Array<number>,
-  disclosedCommitmentIndexes?: Array<number>,
+  disclosedCommittedIndexes?: Array<number>,
   cipher: CONSTANT.Cipher = CONSTANT.Cipher.XOF_SHAKE_256,
 ): boolean {
   return blind_validate(
@@ -193,9 +193,9 @@ export function validate(
     presentationHeader,
     l,
     disclosedMessages,
-    disclosedCommitmentMessages,
+    disclosedCommittedMessages,
     disclosedIndexes,
-    disclosedCommitmentIndexes,
+    disclosedCommittedIndexes,
     cipher,
   )
 }

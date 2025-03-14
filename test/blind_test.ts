@@ -238,10 +238,10 @@ Deno.test("Shake-256 proof for all prover committed messages and signer messages
   ]
 
   const disclosedIndexes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-  const disclosedCommitmentIndexes = [0, 1, 2, 3, 4]
+  const disclosedCommittedIndexes = [0, 1, 2, 3, 4]
 
   const disclosedMessages = disclosedIndexes.map((i) => messages[i])
-  const disclosedCommittedMessages = disclosedCommitmentIndexes.map((i) => committedMessages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
 
   const signature = "80b1195ea9e11a639e11e2dc653ccca0461055edb4f48a6e80b676636e42dd61" +
     "fae3e52c04e192d5053d60e73f3dec5048d423579dcb96cde6969f8048ce53f1" +
@@ -256,7 +256,7 @@ Deno.test("Shake-256 proof for all prover committed messages and signer messages
     messages,
     committedMessages,
     disclosedIndexes,
-    disclosedCommitmentIndexes,
+    disclosedCommittedIndexes,
     proverBlindness,
     cipher,
   )
@@ -270,7 +270,7 @@ Deno.test("Shake-256 proof for all prover committed messages and signer messages
     disclosedMessages,
     disclosedCommittedMessages,
     disclosedIndexes,
-    disclosedCommitmentIndexes,
+    disclosedCommittedIndexes,
     cipher,
   )
 
@@ -326,10 +326,10 @@ Deno.test("Shake-256 proof for half prover committed messages and all signer mes
   ]
 
   const disclosedIndexes = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-  const disclosedCommitmentIndexes = [0, 2, 4]
+  const disclosedCommittedIndexes = [0, 2, 4]
 
   const disclosedMessages = disclosedIndexes.map((i) => messages[i])
-  const disclosedCommittedMessages = disclosedCommitmentIndexes.map((i) => committedMessages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
 
   const signature = "80b1195ea9e11a639e11e2dc653ccca0461055edb4f48a6e80b676636e42dd61" +
     "fae3e52c04e192d5053d60e73f3dec5048d423579dcb96cde6969f8048ce53f1" +
@@ -344,7 +344,7 @@ Deno.test("Shake-256 proof for half prover committed messages and all signer mes
     messages,
     committedMessages,
     disclosedIndexes,
-    disclosedCommitmentIndexes,
+    disclosedCommittedIndexes,
     proverBlindness,
     cipher,
   )
@@ -358,7 +358,7 @@ Deno.test("Shake-256 proof for half prover committed messages and all signer mes
     disclosedMessages,
     disclosedCommittedMessages,
     disclosedIndexes,
-    disclosedCommitmentIndexes,
+    disclosedCommittedIndexes,
     cipher,
   )
 
@@ -414,10 +414,10 @@ Deno.test("Shake-256 proof for all prover committed messages and half signer mes
   ]
 
   const disclosedIndexes = [0, 2, 4, 6, 8]
-  const disclosedCommitmentIndexes = [0, 1, 2, 3, 4]
+  const disclosedCommittedIndexes = [0, 1, 2, 3, 4]
 
   const disclosedMessages = disclosedIndexes.map((i) => messages[i])
-  const disclosedCommittedMessages = disclosedCommitmentIndexes.map((i) => committedMessages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
 
   const signature = "80b1195ea9e11a639e11e2dc653ccca0461055edb4f48a6e80b676636e42dd61" +
     "fae3e52c04e192d5053d60e73f3dec5048d423579dcb96cde6969f8048ce53f1" +
@@ -432,7 +432,7 @@ Deno.test("Shake-256 proof for all prover committed messages and half signer mes
     messages,
     committedMessages,
     disclosedIndexes,
-    disclosedCommitmentIndexes,
+    disclosedCommittedIndexes,
     proverBlindness,
     cipher,
   )
@@ -446,7 +446,7 @@ Deno.test("Shake-256 proof for all prover committed messages and half signer mes
     disclosedMessages,
     disclosedCommittedMessages,
     disclosedIndexes,
-    disclosedCommitmentIndexes,
+    disclosedCommittedIndexes,
     cipher,
   )
 
@@ -502,10 +502,10 @@ Deno.test("Shake-256 proof for half prover committed messages and half signer me
   ]
 
   const disclosedIndexes = [0, 2, 4, 6, 8]
-  const disclosedCommitmentIndexes = [0, 2, 4]
+  const disclosedCommittedIndexes = [0, 2, 4]
 
   const disclosedMessages = disclosedIndexes.map((i) => messages[i])
-  const disclosedCommittedMessages = disclosedCommitmentIndexes.map((i) => committedMessages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
 
   const signature = "80b1195ea9e11a639e11e2dc653ccca0461055edb4f48a6e80b676636e42dd61" +
     "fae3e52c04e192d5053d60e73f3dec5048d423579dcb96cde6969f8048ce53f1" +
@@ -520,7 +520,7 @@ Deno.test("Shake-256 proof for half prover committed messages and half signer me
     messages,
     committedMessages,
     disclosedIndexes,
-    disclosedCommitmentIndexes,
+    disclosedCommittedIndexes,
     proverBlindness,
     cipher,
   )
@@ -534,7 +534,7 @@ Deno.test("Shake-256 proof for half prover committed messages and half signer me
     disclosedMessages,
     disclosedCommittedMessages,
     disclosedIndexes,
-    disclosedCommitmentIndexes,
+    disclosedCommittedIndexes,
     cipher,
   )
 
@@ -590,10 +590,10 @@ Deno.test("Shake-256 proof for no prover committed messages and half signer mess
   ]
 
   const disclosedIndexes = [0, 2, 4, 6, 8]
-  const disclosedCommitmentIndexes = new Array<number>()
+  const disclosedCommittedIndexes = new Array<number>()
 
   const disclosedMessages = disclosedIndexes.map((i) => messages[i])
-  const disclosedCommittedMessages = disclosedCommitmentIndexes.map((i) => committedMessages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
 
   const signature = "80b1195ea9e11a639e11e2dc653ccca0461055edb4f48a6e80b676636e42dd61" +
     "fae3e52c04e192d5053d60e73f3dec5048d423579dcb96cde6969f8048ce53f1" +
@@ -608,7 +608,7 @@ Deno.test("Shake-256 proof for no prover committed messages and half signer mess
     messages,
     committedMessages,
     disclosedIndexes,
-    disclosedCommitmentIndexes,
+    disclosedCommittedIndexes,
     proverBlindness,
     cipher,
   )
@@ -622,7 +622,7 @@ Deno.test("Shake-256 proof for no prover committed messages and half signer mess
     disclosedMessages,
     disclosedCommittedMessages,
     disclosedIndexes,
-    disclosedCommitmentIndexes,
+    disclosedCommittedIndexes,
     cipher,
   )
 
@@ -678,10 +678,10 @@ Deno.test("Shake-256 proof for half prover committed messages and no signer mess
   ]
 
   const disclosedIndexes = new Array<number>()
-  const disclosedCommitmentIndexes = [0, 2, 4]
+  const disclosedCommittedIndexes = [0, 2, 4]
 
   const disclosedMessages = disclosedIndexes.map((i) => messages[i])
-  const disclosedCommittedMessages = disclosedCommitmentIndexes.map((i) => committedMessages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
 
   const signature = "80b1195ea9e11a639e11e2dc653ccca0461055edb4f48a6e80b676636e42dd61" +
     "fae3e52c04e192d5053d60e73f3dec5048d423579dcb96cde6969f8048ce53f1" +
@@ -696,7 +696,7 @@ Deno.test("Shake-256 proof for half prover committed messages and no signer mess
     messages,
     committedMessages,
     disclosedIndexes,
-    disclosedCommitmentIndexes,
+    disclosedCommittedIndexes,
     proverBlindness,
     cipher,
   )
@@ -710,7 +710,7 @@ Deno.test("Shake-256 proof for half prover committed messages and no signer mess
     disclosedMessages,
     disclosedCommittedMessages,
     disclosedIndexes,
-    disclosedCommitmentIndexes,
+    disclosedCommittedIndexes,
     cipher,
   )
 
@@ -766,10 +766,10 @@ Deno.test("Shake-256 proof for no prover committed messages and no signer messag
   ]
 
   const disclosedIndexes = new Array<number>()
-  const disclosedCommitmentIndexes = new Array<number>()
+  const disclosedCommittedIndexes = new Array<number>()
 
   const disclosedMessages = disclosedIndexes.map((i) => messages[i])
-  const disclosedCommittedMessages = disclosedCommitmentIndexes.map((i) => committedMessages[i])
+  const disclosedCommittedMessages = disclosedCommittedIndexes.map((i) => committedMessages[i])
 
   const signature = "80b1195ea9e11a639e11e2dc653ccca0461055edb4f48a6e80b676636e42dd61" +
     "fae3e52c04e192d5053d60e73f3dec5048d423579dcb96cde6969f8048ce53f1" +
@@ -784,7 +784,7 @@ Deno.test("Shake-256 proof for no prover committed messages and no signer messag
     messages,
     committedMessages,
     disclosedIndexes,
-    disclosedCommitmentIndexes,
+    disclosedCommittedIndexes,
     proverBlindness,
     cipher,
   )
@@ -798,7 +798,7 @@ Deno.test("Shake-256 proof for no prover committed messages and no signer messag
     disclosedMessages,
     disclosedCommittedMessages,
     disclosedIndexes,
-    disclosedCommitmentIndexes,
+    disclosedCommittedIndexes,
     cipher,
   )
 
