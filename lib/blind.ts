@@ -14,8 +14,6 @@ import * as CONSTANT from "./constants.ts"
  * operation returns both the serialized combination of the commitment and its proof-of-correctness, as well as the
  * random scalar used to blind the commitment.
  *
- * @memberof blind
- *
  * @param {Array<string>} [committedMessages] A vector of octet strings.
  * @param {Cipher} [cipher] The cipher suite. If not specified, it defaults to `BLS12_381_G1_XOF_SHAKE_256`.
  *
@@ -39,8 +37,6 @@ export function commit(
 /**
  * Calculate a blind BBS signature from a secret key, over a header, a set of messages, and potentially a commitment. If
  * supplied, the commitment MUST be accompanied by its proof-of-correctness.
- *
- * @memberof blind
  *
  * @param {string} secretKey A string representing the secret key.
  * @param {string} publicKey A string representing the public key.
@@ -67,8 +63,6 @@ export function sign(
 /**
  * Verify a blind BBS signature, given the signer's public key, a header, a set of messages known to the signer, and if
  * used, a set of committed messages, along with the prover blindness as returned by the `blindMessages` operation.
- *
- * @memberof blind
  *
  * @param {string} publicKey A string representing the public key.
  * @param {string} signature A string representing the signature.
@@ -105,8 +99,6 @@ export function verify(
  * Furthermore, this operation also expects a secret prover blindness (as returned from the `blindMessages` operation).
  * If the BBS signature is generated using a commitment value, then the prover blindness used to generate the commitment
  * SHOULD be provided to this operation, otherwise the resulting proof will be invalid.
- *
- * @memberof blind
  *
  * @param {string} publicKey A string representing the public key.
  * @param {string} signature A string representing the signature.
@@ -156,8 +148,6 @@ export function prove(
  *
  * In addition, this operation accepts an integer `l`, representing the total number of signed messages known to the
  * signer.
- *
- * @memberof blind
  *
  * @param {string} publicKey A string representing the public key.
  * @param {string} proof A string representing the proof.

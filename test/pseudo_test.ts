@@ -1,6 +1,6 @@
 import { assert } from "@std/assert"
 
-import * as pseudo from "../lib/pseudonym.ts"
+import * as nym from "../lib/pseudonym.ts"
 import * as CONSTANT from "../lib/constants.ts"
 
 Deno.test("Shake-256 signature, no prover committed messages, no signer messages", () => {
@@ -25,8 +25,8 @@ Deno.test("Shake-256 signature, no prover committed messages, no signer messages
     "b595ace54ed5eee43370c1697eb5ce996020d88ca5d811c011cde10c6c07dc2f" +
     "4acbc89bd5652414d5b8823a250ed40b"
 
-  const signature = pseudo.sign(secretKey, publicKey, signerNym, commitmentWithProof, header, messages, cipher)
-  const result = pseudo.verify(
+  const signature = nym.sign(secretKey, publicKey, signerNym, commitmentWithProof, header, messages, cipher)
+  const result = nym.verify(
     publicKey,
     signature,
     header,
@@ -73,8 +73,8 @@ Deno.test("Shake-256 signature, multiple prover committed messages, no signer me
     "7c8e28acae41ab3699b5c0f9da4f58bf67d7e87c5ddb6dadd80fe281e158cc7a" +
     "24bc398f84022dc0dc3a123971f7546c"
 
-  const signature = pseudo.sign(secretKey, publicKey, signerNym, commitmentWithProof, header, messages, cipher)
-  const result = pseudo.verify(
+  const signature = nym.sign(secretKey, publicKey, signerNym, commitmentWithProof, header, messages, cipher)
+  const result = nym.verify(
     publicKey,
     signature,
     header,
@@ -121,8 +121,8 @@ Deno.test("Shake-256 signature, no prover committed messages, multiple signer me
     "b595ace54ed5eee43370c1697eb5ce996020d88ca5d811c011cde10c6c07dc2f" +
     "4acbc89bd5652414d5b8823a250ed40b"
 
-  const signature = pseudo.sign(secretKey, publicKey, signerNym, commitmentWithProof, header, messages, cipher)
-  const result = pseudo.verify(
+  const signature = nym.sign(secretKey, publicKey, signerNym, commitmentWithProof, header, messages, cipher)
+  const result = nym.verify(
     publicKey,
     signature,
     header,
@@ -180,8 +180,8 @@ Deno.test("Shake-256 signature, multiple prover committed messages, multiple sig
     "7c8e28acae41ab3699b5c0f9da4f58bf67d7e87c5ddb6dadd80fe281e158cc7a" +
     "24bc398f84022dc0dc3a123971f7546c"
 
-  const signature = pseudo.sign(secretKey, publicKey, signerNym, commitmentWithProof, header, messages, cipher)
-  const result = pseudo.verify(
+  const signature = nym.sign(secretKey, publicKey, signerNym, commitmentWithProof, header, messages, cipher)
+  const result = nym.verify(
     publicKey,
     signature,
     header,
@@ -257,7 +257,7 @@ Deno.test("Shake-256 proof, all committed messages, all signer messages", () => 
   const proverBlindness = "1ade8b27cccac993dfe3d57be0cd1a200a5cae52d9ea525f106c94f06fea89c3"
   const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
 
-  const { proof, pseudonym } = pseudo.prove(
+  const { proof, pseudonym } = nym.prove(
     publicKey,
     signature,
     header,
@@ -271,7 +271,7 @@ Deno.test("Shake-256 proof, all committed messages, all signer messages", () => 
     proverBlindness,
     cipher,
   )
-  const result = pseudo.validate(
+  const result = nym.validate(
     publicKey,
     proof,
     header,
@@ -350,7 +350,7 @@ Deno.test("Shake-256 proof, half committed messages, all signer messages", () =>
   const proverBlindness = "1ade8b27cccac993dfe3d57be0cd1a200a5cae52d9ea525f106c94f06fea89c3"
   const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
 
-  const { proof, pseudonym } = pseudo.prove(
+  const { proof, pseudonym } = nym.prove(
     publicKey,
     signature,
     header,
@@ -364,7 +364,7 @@ Deno.test("Shake-256 proof, half committed messages, all signer messages", () =>
     proverBlindness,
     cipher,
   )
-  const result = pseudo.validate(
+  const result = nym.validate(
     publicKey,
     proof,
     header,
@@ -443,7 +443,7 @@ Deno.test("Shake-256 proof, all committed messages, half signer messages", () =>
   const proverBlindness = "1ade8b27cccac993dfe3d57be0cd1a200a5cae52d9ea525f106c94f06fea89c3"
   const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
 
-  const { proof, pseudonym } = pseudo.prove(
+  const { proof, pseudonym } = nym.prove(
     publicKey,
     signature,
     header,
@@ -457,7 +457,7 @@ Deno.test("Shake-256 proof, all committed messages, half signer messages", () =>
     proverBlindness,
     cipher,
   )
-  const result = pseudo.validate(
+  const result = nym.validate(
     publicKey,
     proof,
     header,
@@ -536,7 +536,7 @@ Deno.test("Shake-256 proof, half committed messages, half signer messages", () =
   const proverBlindness = "1ade8b27cccac993dfe3d57be0cd1a200a5cae52d9ea525f106c94f06fea89c3"
   const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
 
-  const { proof, pseudonym } = pseudo.prove(
+  const { proof, pseudonym } = nym.prove(
     publicKey,
     signature,
     header,
@@ -550,7 +550,7 @@ Deno.test("Shake-256 proof, half committed messages, half signer messages", () =
     proverBlindness,
     cipher,
   )
-  const result = pseudo.validate(
+  const result = nym.validate(
     publicKey,
     proof,
     header,
@@ -629,7 +629,7 @@ Deno.test("Shake-256 proof, half committed messages, no signer messages", () => 
   const proverBlindness = "1ade8b27cccac993dfe3d57be0cd1a200a5cae52d9ea525f106c94f06fea89c3"
   const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
 
-  const { proof, pseudonym } = pseudo.prove(
+  const { proof, pseudonym } = nym.prove(
     publicKey,
     signature,
     header,
@@ -643,7 +643,7 @@ Deno.test("Shake-256 proof, half committed messages, no signer messages", () => 
     proverBlindness,
     cipher,
   )
-  const result = pseudo.validate(
+  const result = nym.validate(
     publicKey,
     proof,
     header,
@@ -722,7 +722,7 @@ Deno.test("Shake-256 proof, no committed messages, half signer messages", () => 
   const proverBlindness = "1ade8b27cccac993dfe3d57be0cd1a200a5cae52d9ea525f106c94f06fea89c3"
   const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
 
-  const { proof, pseudonym } = pseudo.prove(
+  const { proof, pseudonym } = nym.prove(
     publicKey,
     signature,
     header,
@@ -736,7 +736,7 @@ Deno.test("Shake-256 proof, no committed messages, half signer messages", () => 
     proverBlindness,
     cipher,
   )
-  const result = pseudo.validate(
+  const result = nym.validate(
     publicKey,
     proof,
     header,
@@ -815,7 +815,7 @@ Deno.test("Shake-256 proof, no committed messages, no signer messages", () => {
   const proverBlindness = "1ade8b27cccac993dfe3d57be0cd1a200a5cae52d9ea525f106c94f06fea89c3"
   const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
 
-  const { proof, pseudonym } = pseudo.prove(
+  const { proof, pseudonym } = nym.prove(
     publicKey,
     signature,
     header,
@@ -829,7 +829,7 @@ Deno.test("Shake-256 proof, no committed messages, no signer messages", () => {
     proverBlindness,
     cipher,
   )
-  const result = pseudo.validate(
+  const result = nym.validate(
     publicKey,
     proof,
     header,
@@ -868,8 +868,8 @@ Deno.test("Sha-256 signature, no prover committed messages, no signer messages",
     "30c07d4917c7c0786411ee5c05b00b9d501d3f8e244b860b7b11140cddc9787a" +
     "3ab54ec7fd0a8950dae339f396f2641b"
 
-  const signature = pseudo.sign(secretKey, publicKey, signerNym, commitmentWithProof, header, messages, cipher)
-  const result = pseudo.verify(
+  const signature = nym.sign(secretKey, publicKey, signerNym, commitmentWithProof, header, messages, cipher)
+  const result = nym.verify(
     publicKey,
     signature,
     header,
@@ -916,8 +916,8 @@ Deno.test("Sha-256 signature, multiple prover committed messages, no signer mess
     "1fb6f02ee13e51101743f1983d3fa69b5d344b984c48a265ee6a7b0df8450004" +
     "ceec7c1997b859be16af624e3da2cf44"
 
-  const signature = pseudo.sign(secretKey, publicKey, signerNym, commitmentWithProof, header, messages, cipher)
-  const result = pseudo.verify(
+  const signature = nym.sign(secretKey, publicKey, signerNym, commitmentWithProof, header, messages, cipher)
+  const result = nym.verify(
     publicKey,
     signature,
     header,
@@ -964,8 +964,8 @@ Deno.test("Sha-256 signature, no prover committed messages, multiple signer mess
     "30c07d4917c7c0786411ee5c05b00b9d501d3f8e244b860b7b11140cddc9787a" +
     "3ab54ec7fd0a8950dae339f396f2641b"
 
-  const signature = pseudo.sign(secretKey, publicKey, signerNym, commitmentWithProof, header, messages, cipher)
-  const result = pseudo.verify(
+  const signature = nym.sign(secretKey, publicKey, signerNym, commitmentWithProof, header, messages, cipher)
+  const result = nym.verify(
     publicKey,
     signature,
     header,
@@ -1023,8 +1023,8 @@ Deno.test("Sha-256 signature, multiple prover committed messages, multiple signe
     "1fb6f02ee13e51101743f1983d3fa69b5d344b984c48a265ee6a7b0df8450004" +
     "ceec7c1997b859be16af624e3da2cf44"
 
-  const signature = pseudo.sign(secretKey, publicKey, signerNym, commitmentWithProof, header, messages, cipher)
-  const result = pseudo.verify(
+  const signature = nym.sign(secretKey, publicKey, signerNym, commitmentWithProof, header, messages, cipher)
+  const result = nym.verify(
     publicKey,
     signature,
     header,
@@ -1100,7 +1100,7 @@ Deno.test("Sha-256 proof, all committed messages, all signer messages", () => {
   const proverBlindness = "15494ae70742a6a4f420106c79ee405c138557385f3f6f7256449d147ebf22b8"
   const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
 
-  const { proof, pseudonym } = pseudo.prove(
+  const { proof, pseudonym } = nym.prove(
     publicKey,
     signature,
     header,
@@ -1114,7 +1114,7 @@ Deno.test("Sha-256 proof, all committed messages, all signer messages", () => {
     proverBlindness,
     cipher,
   )
-  const result = pseudo.validate(
+  const result = nym.validate(
     publicKey,
     proof,
     header,
@@ -1193,7 +1193,7 @@ Deno.test("Sha-256 proof, half committed messages, all signer messages", () => {
   const proverBlindness = "15494ae70742a6a4f420106c79ee405c138557385f3f6f7256449d147ebf22b8"
   const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
 
-  const { proof, pseudonym } = pseudo.prove(
+  const { proof, pseudonym } = nym.prove(
     publicKey,
     signature,
     header,
@@ -1207,7 +1207,7 @@ Deno.test("Sha-256 proof, half committed messages, all signer messages", () => {
     proverBlindness,
     cipher,
   )
-  const result = pseudo.validate(
+  const result = nym.validate(
     publicKey,
     proof,
     header,
@@ -1286,7 +1286,7 @@ Deno.test("Shake-256 proof, all committed messages, half signer messages", () =>
   const proverBlindness = "15494ae70742a6a4f420106c79ee405c138557385f3f6f7256449d147ebf22b8"
   const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
 
-  const { proof, pseudonym } = pseudo.prove(
+  const { proof, pseudonym } = nym.prove(
     publicKey,
     signature,
     header,
@@ -1300,7 +1300,7 @@ Deno.test("Shake-256 proof, all committed messages, half signer messages", () =>
     proverBlindness,
     cipher,
   )
-  const result = pseudo.validate(
+  const result = nym.validate(
     publicKey,
     proof,
     header,
@@ -1379,7 +1379,7 @@ Deno.test("Shake-256 proof, half committed messages, half signer messages", () =
   const proverBlindness = "15494ae70742a6a4f420106c79ee405c138557385f3f6f7256449d147ebf22b8"
   const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
 
-  const { proof, pseudonym } = pseudo.prove(
+  const { proof, pseudonym } = nym.prove(
     publicKey,
     signature,
     header,
@@ -1393,7 +1393,7 @@ Deno.test("Shake-256 proof, half committed messages, half signer messages", () =
     proverBlindness,
     cipher,
   )
-  const result = pseudo.validate(
+  const result = nym.validate(
     publicKey,
     proof,
     header,
@@ -1472,7 +1472,7 @@ Deno.test("Shake-256 proof, half committed messages, no signer messages", () => 
   const proverBlindness = "15494ae70742a6a4f420106c79ee405c138557385f3f6f7256449d147ebf22b8"
   const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
 
-  const { proof, pseudonym } = pseudo.prove(
+  const { proof, pseudonym } = nym.prove(
     publicKey,
     signature,
     header,
@@ -1486,7 +1486,7 @@ Deno.test("Shake-256 proof, half committed messages, no signer messages", () => 
     proverBlindness,
     cipher,
   )
-  const result = pseudo.validate(
+  const result = nym.validate(
     publicKey,
     proof,
     header,
@@ -1565,7 +1565,7 @@ Deno.test("Shake-256 proof, no committed messages, half signer messages", () => 
   const proverBlindness = "15494ae70742a6a4f420106c79ee405c138557385f3f6f7256449d147ebf22b8"
   const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
 
-  const { proof, pseudonym } = pseudo.prove(
+  const { proof, pseudonym } = nym.prove(
     publicKey,
     signature,
     header,
@@ -1579,7 +1579,7 @@ Deno.test("Shake-256 proof, no committed messages, half signer messages", () => 
     proverBlindness,
     cipher,
   )
-  const result = pseudo.validate(
+  const result = nym.validate(
     publicKey,
     proof,
     header,
@@ -1658,7 +1658,7 @@ Deno.test("Shake-256 proof, no committed messages, no signer messages", () => {
   const proverBlindness = "15494ae70742a6a4f420106c79ee405c138557385f3f6f7256449d147ebf22b8"
   const contextId = "bbb4750cdce6d2122bb4c4f039b6ad5a79f028eb448013a38636a95d63af360a"
 
-  const { proof, pseudonym } = pseudo.prove(
+  const { proof, pseudonym } = nym.prove(
     publicKey,
     signature,
     header,
@@ -1672,7 +1672,7 @@ Deno.test("Shake-256 proof, no committed messages, no signer messages", () => {
     proverBlindness,
     cipher,
   )
-  const result = pseudo.validate(
+  const result = nym.validate(
     publicKey,
     proof,
     header,

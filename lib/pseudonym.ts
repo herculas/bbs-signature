@@ -1,7 +1,8 @@
 /**
  * Generating and verifying blind BBS signatures with pseudonyms, as well as generating and validating blind BBS proofs
  * with pseudonym.
- * @module pseudo
+ *
+ * @module nym
  *
  * @see https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-bbs-per-verifier-linkability-01
  */
@@ -19,8 +20,6 @@ import * as CONSTANT from "./constants.ts"
 /**
  * Commit a set of messages that the prover wants to include in the signature, without revealing these messages to the
  * signer. The prover also needs to choose its part of the pseudonym secret `proverNym` as a random scalar value.
- *
- * @memberof pseudo
  *
  * @param {Array<string>} [committedMessages] A vector of octet strings.
  * @param {string} [proverNym] The prover's part of the pseudonym secret.
@@ -51,8 +50,6 @@ export function commit(
  * During the signing process, the signer will provide its own randomness into the pseudonym secret. This will ensure
  * the pseudonym secret always being unique, among different signature generation events.
  *
- * @memberof pseudo
- *
  * @param {string} secretKey A string representing the secret key.
  * @param {string} publicKey A string representing the public key.
  * @param {string} signerNymEntropy A string representing the signer's part of the pseudonym secret.
@@ -80,8 +77,6 @@ export function sign(
 /**
  * Verify a blind BBS signature with pseudonym, calculating and returning the final pseudonym secret used to calculate
  * the pseudonym value during the proving process.
- *
- * @memberof pseudo
  *
  * @param {string} publicKey A string representing the public key.
  * @param {string} signature A string representing the signature.
@@ -133,8 +128,6 @@ export function verify(
  *
  * Validating this proof guarantees authenticity and integrity of the header, the presentation header, and the disclosed
  * messages, the knowledge of a valid BBS signature, as well as the correctness and ownership of the pseudonym secret.
- *
- * @memberof pseudo
  *
  * @param {string} publicKey A string representing the public key.
  * @param {string} signature A string representing the signature.
@@ -196,8 +189,6 @@ export function prove(
  * messages as well as the indexes those messages had in the original vectors of signed messages.
  *
  * Validating this proof will also ensure the correctness and ownership by the prover of the received pseudonym.
- *
- * @memberof pseudo
  *
  * @param {string} publicKey A string representing the public key.
  * @param {string} proof A string representing the proof.

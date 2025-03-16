@@ -491,7 +491,7 @@ pub(super) fn initialize_proof_with_nym(
 /// - `api_id`: an octet string representing the API identifier.
 /// - `cipher`: a cipher suite.
 ///
-/// Return a pseudonym proof.
+/// Return a pseudonym proof containing 3 G1 points.
 pub(super) fn verify_nym_proof(
     pseudonym: &G1Affine,
     context_id: &[u8],

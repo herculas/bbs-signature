@@ -12,8 +12,6 @@ import * as CONSTANT from "./constants.ts"
 /**
  * Generate a secret key deterministically from a secret material and an optional key information string.
  *
- * @memberof key
- *
  * @param {string} material A secret string from which to generate the secret key, at least 32 bytes.
  * @param {string} [info] A context-specific information to bind the secret key to a particular context.
  * @param {string} [dst] A string representing the domain separation tag.
@@ -35,8 +33,6 @@ export function generateSecret(
 /**
  * Generate a public key corresponding to the given private key.
  *
- * @memberof key
- *
  * @param {string} secretKey The private key.
  *
  * @returns {string} The hex-encoded public key.
@@ -49,8 +45,6 @@ export function derivePublic(secretKey: string): string {
 
 /**
  * Generate a keypair deterministically from a secret key material string.
- *
- * @memberof key
  *
  * @param {string} material A secret string from which to generate the secret key, at least 32 bytes.
  * @param {string} [info] A context-specific information to bind the secret key to a particular context.

@@ -163,7 +163,7 @@ pub(super) fn blind_commit_verify(
 /// - `api_id`: an octet string representing the API identifier.
 /// - `cipher`: a cipher suite.
 ///
-/// Return a blind BBS signature encoded as an octet string.
+/// Return a blind BBS signature.
 pub(super) fn finalize_blind_sign(
     secret_key: &Scalar,
     public_key: &[u8],

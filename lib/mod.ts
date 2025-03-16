@@ -1,5 +1,5 @@
 export * as key from "./key.ts"
 export * as basic from "./basic.ts"
 export * as blind from "./blind.ts"
-export * as pseudo from "./pseudonym.ts"
+export * as nym from "./pseudonym.ts"
 export { Cipher } from "./constants.ts"
