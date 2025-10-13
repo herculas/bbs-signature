@@ -355,7 +355,7 @@ pub fn blind_messages_with_nym(
 ) -> (CommitmentWithProof, Scalar) {
     let default_committed_messages = vec![];
     let default_prover_nym = Scalar::zero();
-    let default_api_id = [cipher.id, PADDING_BLIND, PADDING_API_ID].concat();
+    let default_api_id = [cipher.id, PADDING_API_ID, PADDING_PSEUDONYM].concat();
 
     let committed_messages = committed_messages.unwrap_or(&default_committed_messages);
     let prover_nym = prover_nym.unwrap_or(&default_prover_nym);
@@ -1714,6 +1714,64 @@ mod tests {
                 7c8e28acae41ab3699b5c0f9da4f58bf67d7e87c5ddb6dadd80fe281e158cc7a\
                 24bc398f84022dc0dc3a123971f7546c"
         );
+    }
+
+    #[test]
+    fn shake_256_pseudonym_sign_commitment_with_default_api_id() {
+        let committed_messages = vec![];
+
+        let prover_nym_bytes =
+            hex_to_bytes("6830ea571e9fca0194d9ebd5c571369d8b81655afe0bbb9c6f5efe934f699418");
+        let prover_nym = Scalar::deserialize(&prover_nym_bytes);
+
+        let cipher = BLS12_381_G1_XOF_SHAKE_256;
+
+        let (commitment_with_proof, _prover_blindness) = blind_messages_with_nym(
+            Some(&committed_messages),
+            Some(&prover_nym),
+            None, // Use default API ID
+            &cipher,
+            Some(|count: usize| -> Vec<Scalar> {
+                seeded_random_scalars(
+                    b"3.141592653589793238462643383279",
+                    b"BBS_BLS12381G1_XOF:SHAKE-256_SSWU_RO_H2G_HM2S_COMMIT_MOCK_RANDOM_SCALARS_DST_",
+                    count,
+                    &BLS12_381_G1_XOF_SHAKE_256,
+                )
+            }),
+        );
+
+        let secret_key_bytes =
+            hex_to_bytes("60e55110f76883a13d030b2f6bd11883422d5abde717569fc0731f51237169fc");
+        let secret_key = Scalar::deserialize(&secret_key_bytes);
+
+        let public_key_bytes = hex_to_bytes(
+            "\
+                    a820f230f6ae38503b86c70dc50b61c58a77e45c39ab25c0652bbaa8fa136f28\
+                    51bd4781c9dcde39fc9d1d52c9e60268061e7d7632171d91aa8d460acee0e96f\
+                    1e7c4cfb12d3ff9ab5d5dc91c277db75c845d649ef3c4f63aebc364cd55ded0c",
+        );
+
+        let signer_nym_entropy_bytes =
+            "3d40961fce6c09eec24a371322732932503b458d7a4cf7891bdaa765b30027c5";
+        let entropy = Scalar::deserialize(&hex_to_bytes(signer_nym_entropy_bytes));
+
+        let header = hex_to_bytes("11223344556677889900aabbccddeeff");
+
+        let messages = &vec![];
+
+        blind_sign_with_nym(
+            &secret_key,
+            &public_key_bytes,
+            &entropy,
+            Some(&commitment_with_proof.serialize()),
+            Some(&header),
+            Some(&messages),
+            &cipher,
+        );
+
+        // blind_sign_with_nym() will panic if it's unable to validate the commitment.
+        assert!(true);
     }
 
     #[test]
